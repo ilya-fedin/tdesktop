@@ -62,7 +62,7 @@ jobs:
       QT: "5_15_1"
       QT_VER: "5.15.1"
       OPENSSL_VER: "1_1_1"
-      UPLOAD_ARTIFACT: "false"
+      UPLOAD_ARTIFACT: "true"
       ONLY_CACHE: "false"
       MANUAL_CACHING: "2"
       DOC_PATH: "docs/building-msvc.md"
@@ -108,7 +108,7 @@ jobs:
             thisFile=$REPO_NAME/.github/workflows/win.yml
             echo `md5sum $thisFile | awk '{ print $1 }'` >> CACHE_KEY.txt
           fi
-          echo "CACHE_KEY=`md5sum CACHE_KEY.txt | awk '{ print $1 }'`" >> $GITHUB_ENV
+          echo "CACHE_KEY=311aab4dae88c3e2c94e54cdf99dda21" >> $GITHUB_ENV
 
       - name: Choco installs.
         run: choco install --no-progress -y nasm yasm jom ninja
