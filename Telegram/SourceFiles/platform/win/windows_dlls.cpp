@@ -41,6 +41,7 @@ void init() {
 		u"dwmapi.dll"_q,
 		u"rstrtmgr.dll"_q,
 		u"psapi.dll"_q,
+		u"shcore.dll"_q,
 		u"user32.dll"_q,
 	};
 	for (const auto &lib : list) {
@@ -71,7 +72,9 @@ f_PSStringFromPropertyKey PSStringFromPropertyKey;
 f_DwmIsCompositionEnabled DwmIsCompositionEnabled;
 f_DwmSetWindowAttribute DwmSetWindowAttribute;
 f_GetProcessMemoryInfo GetProcessMemoryInfo;
+f_GetDpiForMonitor GetDpiForMonitor;
 f_SetWindowCompositionAttribute SetWindowCompositionAttribute;
+f_GetSystemMetricsForDpi GetSystemMetricsForDpi;
 
 void start() {
 	init();
@@ -127,8 +130,17 @@ void start() {
 	const auto LibPsApi = SafeLoadLibrary(u"psapi.dll"_q);
 	LoadMethod(LibPsApi, "GetProcessMemoryInfo", GetProcessMemoryInfo);
 
+	if (IsWindows8Point1OrGreater()) {
+		const auto LibShCore = SafeLoadLibrary(u"shcore.dll"_q);
+		LoadMethod(LibShCore, "GetDpiForMonitor", GetDpiForMonitor);
+	}
+
 	const auto LibUser32 = SafeLoadLibrary(u"user32.dll"_q);
 	LoadMethod(LibUser32, "SetWindowCompositionAttribute", SetWindowCompositionAttribute);
+
+	if (IsWindows10OrGreater()) {
+		LoadMethod(LibUser32, "GetSystemMetricsForDpi", GetSystemMetricsForDpi);
+	}
 }
 
 } // namespace Dlls

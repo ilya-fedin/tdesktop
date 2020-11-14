@@ -148,12 +148,34 @@ bool EventFilter::customWindowFrameEvent(
 		if (GetWindowPlacement(hWnd, &wp) && wp.showCmd == SW_SHOWMAXIMIZED) {
 			LPNCCALCSIZE_PARAMS params = (LPNCCALCSIZE_PARAMS)lParam;
 			LPRECT r = (wParam == TRUE) ? &params->rgrc[0] : (LPRECT)lParam;
+			if (!Dlls::GetDpiForMonitor
+				|| !Dlls::GetSystemMetricsForDpi) {
+				int borderSize = GetSystemMetrics(SM_CXSIZEFRAME)
+					+ GetSystemMetrics(SM_CXPADDEDBORDER);
+				r->left += borderSize;
+				r->right -= borderSize;
+				r->top += borderSize;
+				r->bottom -= borderSize;
+			}
 			HMONITOR hMonitor = MonitorFromPoint({ (r->left + r->right) / 2, (r->top + r->bottom) / 2 }, MONITOR_DEFAULTTONEAREST);
 			if (hMonitor) {
+				UINT dpiX = 0;
+				UINT dpiY = 0;
+				if (Dlls::GetDpiForMonitor
+					&& Dlls::GetSystemMetricsForDpi
+					&& Dlls::GetDpiForMonitor(hMonitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY) == S_OK) {
+					int borderSizeX = Dlls::GetSystemMetricsForDpi(SM_CXSIZEFRAME, dpiX)
+						+ Dlls::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpiX);
+					int borderSizeY = GetSystemMetricsForDpi(SM_CXSIZEFRAME, dpiY)
+						+ Dlls::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpiY);
+					r->left += borderSizeX;
+					r->right -= borderSizeX;
+					r->top += borderSizeY;
+					r->bottom -= borderSizeY;
+				}
 				MONITORINFO mi;
 				mi.cbSize = sizeof(mi);
 				if (GetMonitorInfo(hMonitor, &mi)) {
-					*r = mi.rcWork;
 					UINT uEdge = (UINT)-1;
 					if (IsTaskbarAutoHidden(&mi.rcMonitor, &uEdge)) {
 						switch (uEdge) {

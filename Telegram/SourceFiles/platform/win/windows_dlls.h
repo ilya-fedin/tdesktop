@@ -14,6 +14,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <dwmapi.h>
 #include <RestartManager.h>
 #include <psapi.h>
+#include <shellscalingapi.h>
 
 #ifdef __MINGW32__
 #define __in
@@ -166,6 +167,15 @@ using f_GetProcessMemoryInfo = BOOL(FAR STDAPICALLTYPE*)(
 	DWORD cb);
 extern f_GetProcessMemoryInfo GetProcessMemoryInfo;
 
+// SHCORE.DLL
+
+using f_GetDpiForMonitor = HRESULT(FAR STDAPICALLTYPE*)(
+	HMONITOR hmonitor,
+	MONITOR_DPI_TYPE dpiType,
+	UINT *dpiX,
+	UINT *dpiY);
+extern f_GetDpiForMonitor GetDpiForMonitor;
+
 // USER32.DLL
 
 enum class WINDOWCOMPOSITIONATTRIB {
@@ -207,6 +217,9 @@ struct WINDOWCOMPOSITIONATTRIBDATA {
 
 using f_SetWindowCompositionAttribute = BOOL(WINAPI *)(HWND hWnd, WINDOWCOMPOSITIONATTRIBDATA*);
 extern f_SetWindowCompositionAttribute SetWindowCompositionAttribute;
+
+using f_GetSystemMetricsForDpi = int(FAR STDAPICALLTYPE*)(int nIndex, UINT dpi);
+extern f_GetSystemMetricsForDpi GetSystemMetricsForDpi;
 
 } // namespace Dlls
 } // namespace Platform
