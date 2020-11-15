@@ -42,8 +42,6 @@ HICON qt_pixmapToWinHICON(const QPixmap &);
 
 using namespace Microsoft::WRL;
 
-Q_DECLARE_METATYPE(QMargins);
-
 namespace Platform {
 namespace {
 
@@ -347,7 +345,6 @@ void MainWindow::initShadows() {
 	} else {
 		_shadow.emplace(this, st::windowShadowFg->c);
 	}
-	updateCustomMargins();
 	firstShadowsUpdate();
 }
 
@@ -412,73 +409,6 @@ void MainWindow::updateSystemMenu(Qt::WindowState state) {
 			break;
 		}
 	}
-}
-
-void MainWindow::updateCustomMargins() {
-	if (!ps_hWnd || _inUpdateMargins) {
-		return;
-	}
-
-	_inUpdateMargins = true;
-
-	const auto margins = computeCustomMargins();
-	if (const auto native = QGuiApplication::platformNativeInterface()) {
-		native->setWindowProperty(
-			windowHandle()->handle(),
-			qsl("WindowsCustomMargins"),
-			QVariant::fromValue<QMargins>(margins));
-	}
-	if (!_themeInited) {
-		_themeInited = true;
-		validateWindowTheme(
-			Core::App().settings().nativeWindowFrame(),
-			Window::Theme::IsNightMode());
-	}
-	_inUpdateMargins = false;
-}
-
-QMargins MainWindow::computeCustomMargins() {
-	if (Core::App().settings().nativeWindowFrame()) {
-		_deltaLeft = _deltaTop = _deltaRight = _deltaBottom = 0;
-		return QMargins();
-	}
-	auto r = RECT();
-	GetClientRect(ps_hWnd, &r);
-
-	auto a = r;
-	const auto style = GetWindowLongPtr(ps_hWnd, GWL_STYLE);
-	const auto styleEx = GetWindowLongPtr(ps_hWnd, GWL_EXSTYLE);
-	AdjustWindowRectEx(&a, style, false, styleEx);
-	auto margins = QMargins(a.left - r.left, a.top - r.top, r.right - a.right, r.bottom - a.bottom);
-	if (style & WS_MAXIMIZE) {
-		RECT w, m;
-		GetWindowRect(ps_hWnd, &w);
-		m = w;
-
-		HMONITOR hMonitor = MonitorFromRect(&w, MONITOR_DEFAULTTONEAREST);
-		if (hMonitor) {
-			MONITORINFO mi;
-			mi.cbSize = sizeof(mi);
-			GetMonitorInfo(hMonitor, &mi);
-			m = mi.rcWork;
-		}
-
-		_deltaLeft = w.left - m.left;
-		_deltaTop = w.top - m.top;
-		_deltaRight = m.right - w.right;
-		_deltaBottom = m.bottom - w.bottom;
-
-		margins.setLeft(margins.left() - _deltaLeft);
-		margins.setRight(margins.right() - _deltaRight);
-		margins.setBottom(margins.bottom() - _deltaBottom);
-		margins.setTop(margins.top() - _deltaTop);
-	} else if (_deltaLeft != 0 || _deltaTop != 0 || _deltaRight != 0 || _deltaBottom != 0) {
-		RECT w;
-		GetWindowRect(ps_hWnd, &w);
-		SetWindowPos(ps_hWnd, 0, 0, 0, w.right - w.left - _deltaLeft - _deltaRight, w.bottom - w.top - _deltaBottom - _deltaTop, SWP_NOMOVE | SWP_NOSENDCHANGING | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOREPOSITION);
-		_deltaLeft = _deltaTop = _deltaRight = _deltaBottom = 0;
-	}
-	return margins;
 }
 
 void MainWindow::validateWindowTheme(bool native, bool night) {
@@ -595,7 +525,7 @@ void MainWindow::fixMaximizedWindow() {
 			mi.cbSize = sizeof(mi);
 			GetMonitorInfo(hMonitor, &mi);
 			const auto m = mi.rcWork;
-			SetWindowPos(ps_hWnd, 0, 0, 0, m.right - m.left - _deltaLeft - _deltaRight, m.bottom - m.top - _deltaTop - _deltaBottom, SWP_NOMOVE | SWP_NOSENDCHANGING | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOREPOSITION);
+			SetWindowPos(ps_hWnd, 0, 0, 0, m.right - m.left, m.bottom - m.top, SWP_NOMOVE | SWP_NOSENDCHANGING | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOREPOSITION);
 		}
 	}
 }

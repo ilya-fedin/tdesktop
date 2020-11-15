@@ -29,7 +29,6 @@ public:
 
 	void psInitSysMenu();
 	void updateSystemMenu(Qt::WindowState state);
-	void updateCustomMargins();
 
 	void updateWindowIcon() override;
 
@@ -48,13 +47,6 @@ public:
 	void shadowsUpdate(
 		Ui::Platform::WindowShadow::Changes changes,
 		WINDOWPOS *position = nullptr);
-
-	int deltaLeft() const {
-		return _deltaLeft;
-	}
-	int deltaTop() const {
-		return _deltaTop;
-	}
 
 	void psShowTrayMenu();
 
@@ -89,7 +81,6 @@ protected:
 private:
 	void setupNativeWindowFrame();
 	void updateIconCounters();
-	QMargins computeCustomMargins();
 	void validateWindowTheme(bool native, bool night);
 	void psDestroyIcons();
 	void fixMaximizedWindow();
@@ -99,7 +90,6 @@ private:
 	std::optional<Ui::Platform::WindowShadow> _shadow;
 
 	bool _themeInited = false;
-	bool _inUpdateMargins = false;
 	bool _wasNativeFrame = false;
 	bool _hasActiveFrame = false;
 
@@ -109,11 +99,6 @@ private:
 	HICON ps_iconBig = nullptr;
 	HICON ps_iconSmall = nullptr;
 	HICON ps_iconOverlay = nullptr;
-
-	int _deltaLeft = 0;
-	int _deltaTop = 0;
-	int _deltaRight = 0;
-	int _deltaBottom = 0;
 
 };
 

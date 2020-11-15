@@ -208,7 +208,7 @@ bool EventFilter::customWindowFrameEvent(
 		POINTS p = MAKEPOINTS(lParam);
 		RECT r;
 		GetWindowRect(hWnd, &r);
-		auto res = _window->hitTest(QPoint(p.x - r.left + _window->deltaLeft(), p.y - r.top + _window->deltaTop()));
+		auto res = _window->hitTest(QPoint(p.x - r.left, p.y - r.top));
 		switch (res) {
 		case Window::HitTestResult::Client:
 		case Window::HitTestResult::SysButton:   *result = HTCLIENT; break;
@@ -310,7 +310,6 @@ bool EventFilter::mainWindowEvent(
 			} else {
 				_window->positionUpdated();
 			}
-			_window->updateCustomMargins();
 			const auto changes = (wParam == SIZE_MINIMIZED || wParam == SIZE_MAXIMIZED) ? Change::Hidden : (Change::Resized | Change::Shown);
 			_window->shadowsUpdate(changes);
 		}
