@@ -151,7 +151,8 @@ bool EventFilter::customWindowFrameEvent(
 			if (!Dlls::GetDpiForMonitor
 				|| !Dlls::GetSystemMetricsForDpi) {
 				int borderSize = GetSystemMetrics(SM_CXSIZEFRAME)
-					+ GetSystemMetrics(SM_CXPADDEDBORDER);
+					+ GetSystemMetrics(SM_CXPADDEDBORDER)
+					- 1;
 				r->left += borderSize;
 				r->right -= borderSize;
 				r->top += borderSize;
