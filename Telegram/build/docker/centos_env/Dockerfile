@@ -22,8 +22,8 @@ ENV PKG_CONFIG_PATH /usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/loc
 RUN dnf -y install epel-release \
 	&& dnf config-manager --set-enabled powertools \
 	&& dnf -y install autoconf automake libtool pkgconfig make patch git \
-		python3.11-pip python3.11-devel gperf flex bison clang lld yasm \
-		file which perl-open perl-XML-Parser xorg-x11-util-macros \
+		python3.11-pip python3.11-devel gperf flex bison clang clazy lld \
+		yasm file which perl-open perl-XML-Parser xorg-x11-util-macros \
 		gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ gcc-toolset-13-binutils \
 		libffi-devel fontconfig-devel freetype-devel libX11-devel \
 		alsa-lib-devel pulseaudio-libs-devel mesa-libGL-devel mesa-libEGL-devel \

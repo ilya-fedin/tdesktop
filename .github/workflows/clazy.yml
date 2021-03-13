@@ -1,0 +1,115 @@
+name: clazy.
+
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - 'changelog.txt'
+      - 'LEGAL'
+      - 'LICENSE'
+      - '.github/**'
+      - '!.github/workflows/clazy.yml'
+      - 'snap/**'
+      - 'Telegram/build/**'
+      - 'Telegram/Resources/uwp/**'
+      - 'Telegram/Resources/winrc/**'
+      - 'Telegram/SourceFiles/platform/win/**'
+      - 'Telegram/SourceFiles/platform/mac/**'
+      - 'Telegram/Telegram/**'
+      - 'Telegram/configure.bat'
+      - 'Telegram/Telegram.plist'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - 'changelog.txt'
+      - 'LEGAL'
+      - 'LICENSE'
+      - '.github/**'
+      - '!.github/workflows/clazy.yml'
+      - 'snap/**'
+      - 'Telegram/build/**'
+      - 'Telegram/Resources/uwp/**'
+      - 'Telegram/Resources/winrc/**'
+      - 'Telegram/SourceFiles/platform/win/**'
+      - 'Telegram/SourceFiles/platform/mac/**'
+      - 'Telegram/Telegram/**'
+      - 'Telegram/configure.bat'
+      - 'Telegram/Telegram.plist'
+
+jobs:
+
+  clazy:
+    name: Rocky Linux 8
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/centos_env
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    env:
+      UPLOAD_ARTIFACT: "false"
+
+    steps:
+      - name: Get repository name.
+        run: echo "REPO_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
+      - name: Clone.
+        uses: actions/checkout@v3.1.0
+        with:
+          submodules: recursive
+          path: ${{ env.REPO_NAME }}
+
+      - name: First set up.
+        run: |
+          clazy --version
+          ln -s /usr/src/Libraries
+
+      - name: Telegram Desktop build.
+        run: |
+          cd $REPO_NAME/Telegram
+
+          ./configure.sh \
+          -D CMAKE_C_COMPILER=clang \
+          -D CMAKE_CXX_COMPILER=clazy \
+          -D CMAKE_C_FLAGS_DEBUG="" \
+          -D CMAKE_CXX_FLAGS_DEBUG="" \
+          -D CMAKE_EXE_LINKER_FLAGS="-L/usr/local/lib64 -s" \
+          -D TDESKTOP_API_TEST=ON
+
+          export CLAZY_CHECKS="level0,level1,no-connect-3arg-lambda,no-non-pod-global-static,no-strict-iterators"
+          export CLAZY_IGNORE_DIRS=".*(Telegram/ThirdParty|cmake/external).*"
+          cmake --build ../out --config Debug --parallel 2>&1 | tee ../log.txt
+
+      - name: Check.
+        run: |
+          filePath="$REPO_NAME/out/Debug/Telegram"
+          if test -f "$filePath"; then
+            if grep -qE 'warning:.*\[-W.*\]' "$REPO_NAME/log.txt"; then
+              grep -E 'warning:.*\[-W.*\]' "$REPO_NAME/log.txt" | sort -u | sed -r 's/^.* (\[-W.*\])/\1/' | sort | uniq -c | sort -n
+              exit 1
+            else
+              echo "Build successfully done! :)"
+
+              size=$(stat -c %s "$filePath")
+              echo "File size of ${filePath}: ${size} Bytes."
+            fi
+          else
+            echo "Build error, output file does not exist."
+            exit 1
+          fi
+
+      - name: Move artifact.
+        if: env.UPLOAD_ARTIFACT == 'true'
+        run: |
+          cd $REPO_NAME/out/Debug
+          mkdir artifact
+          mv Telegram artifact/
+      - uses: actions/upload-artifact@master
+        if: env.UPLOAD_ARTIFACT == 'true'
+        name: Upload artifact.
+        with:
+          name: Telegram
+          path: ${{ env.REPO_NAME }}/out/Debug/artifact/
