@@ -47,11 +47,11 @@ PhoneWidget::PhoneWidget(
 , _phone(this, st::introPhone)
 , _checkRequestTimer([=] { checkRequest(); }) {
 	connect(_phone, SIGNAL(voidBackspace(QKeyEvent*)), _code, SLOT(startErasing(QKeyEvent*)));
-	connect(_country, SIGNAL(codeChanged(const QString &)), _code, SLOT(codeSelected(const QString &)));
-	connect(_code, SIGNAL(codeChanged(const QString &)), _country, SLOT(onChooseCode(const QString &)));
-	connect(_code, SIGNAL(codeChanged(const QString &)), _phone, SLOT(onChooseCode(const QString &)));
-	connect(_country, SIGNAL(codeChanged(const QString &)), _phone, SLOT(onChooseCode(const QString &)));
-	connect(_code, SIGNAL(addedToNumber(const QString &)), _phone, SLOT(addedToNumber(const QString &)));
+	connect(_country, SIGNAL(codeChanged(QString)), _code, SLOT(codeSelected(QString)));
+	connect(_code, SIGNAL(codeChanged(QString)), _country, SLOT(onChooseCode(QString)));
+	connect(_code, SIGNAL(codeChanged(QString)), _phone, SLOT(onChooseCode(QString)));
+	connect(_country, SIGNAL(codeChanged(QString)), _phone, SLOT(onChooseCode(QString)));
+	connect(_code, SIGNAL(addedToNumber(QString)), _phone, SLOT(addedToNumber(QString)));
 	connect(_phone, &Ui::PhonePartInput::changed, [=] { phoneChanged(); });
 	connect(_code, &Ui::CountryCodeInput::changed, [=] { phoneChanged(); });
 

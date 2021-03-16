@@ -92,7 +92,7 @@ void CountryInput::mousePressEvent(QMouseEvent *e) {
 	mouseMoveEvent(e);
 	if (_active) {
 		auto box = Ui::show(Box<CountrySelectBox>());
-		connect(box, SIGNAL(countryChosen(const QString&)), this, SLOT(onChooseCountry(const QString&)));
+		connect(box, SIGNAL(countryChosen(QString)), this, SLOT(onChooseCountry(QString)));
 	}
 }
 
@@ -179,8 +179,8 @@ void CountrySelectBox::prepare() {
 
 	setDimensions(st::boxWidth, st::boxMaxListHeight);
 
-	connect(_inner, SIGNAL(mustScrollTo(int, int)), this, SLOT(onScrollToY(int, int)));
-	connect(_inner, SIGNAL(countryChosen(const QString&)), this, SIGNAL(countryChosen(const QString&)));
+	connect(_inner, SIGNAL(mustScrollTo(int,int)), this, SLOT(onScrollToY(int,int)));
+	connect(_inner, SIGNAL(countryChosen(QString)), this, SIGNAL(countryChosen(QString)));
 }
 
 void CountrySelectBox::submit() {
