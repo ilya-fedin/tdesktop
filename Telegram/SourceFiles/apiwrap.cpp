@@ -4205,7 +4205,11 @@ void ApiWrap::sendInlineResult(
 		sendFlags |= MTPmessages_SendInlineBotResult::Flag::f_silent;
 	}
 	if (bot) {
-		flags |= MTPDmessage::Flag::f_via_bot_id;
+		if (action.options.hideVia) {
+			sendFlags |= MTPmessages_SendInlineBotResult::Flag::f_hide_via;
+		} else {
+			flags |= MTPDmessage::Flag::f_via_bot_id;
+		}
 	}
 	if (action.options.scheduled) {
 		flags |= MTPDmessage::Flag::f_from_scheduled;
@@ -4228,7 +4232,7 @@ void ApiWrap::sendInlineResult(
 		newId.msg,
 		messageFromId,
 		MTP_int(HistoryItem::NewMessageDate(action.options.scheduled)),
-		bot ? peerToUser(bot->id) : 0,
+		bot && !action.options.hideVia ? peerToUser(bot->id) : 0,
 		action.replyTo,
 		messagePostAuthor);
 
