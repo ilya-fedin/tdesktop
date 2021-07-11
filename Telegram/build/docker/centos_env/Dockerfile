@@ -20,13 +20,31 @@ RUN yum -y install git cmake3 meson ninja-build autoconf automake libtool \
 	pulseaudio-libs-devel mesa-libGL-devel mesa-libEGL-devel libudev-devel \
 	webkitgtk4-devel pkgconfig bison yasm file which xorg-x11-util-macros \
 	devtoolset-9-make devtoolset-9-gcc devtoolset-9-gcc-c++ \
-	devtoolset-9-binutils
+	devtoolset-9-binutils libatomic
 
 SHELL [ "scl", "enable", "devtoolset-9", "--", "bash", "-c" ]
 RUN ln -s cmake3 /usr/bin/cmake
 
 ENV LibrariesPath /usr/src/Libraries
 WORKDIR $LibrariesPath
+
+ENV LLVM_VERSION 12.0.0
+ENV LLVM_TARBALL_NAME clang+llvm-$LLVM_VERSION-x86_64-linux-sles12.4
+RUN curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVM_VERSION/$LLVM_TARBALL_NAME.tar.xz | tar -xJC /usr/local --strip-components=1
+
+# pre-built libcxxabi requires GLIBC_2.18, we have only 2.17
+RUN curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVM_VERSION/llvm-$LLVM_VERSION.src.tar.xz | tar -xJ --transform=s/^llvm-$LLVM_VERSION.src/llvm/
+RUN curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVM_VERSION/libcxx-$LLVM_VERSION.src.tar.xz | tar -xJ --transform=s/^libcxx-$LLVM_VERSION.src/libcxx/
+RUN curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVM_VERSION/libcxxabi-$LLVM_VERSION.src.tar.xz | tar -xJ --transform=s/^libcxxabi-$LLVM_VERSION.src/libcxxabi/
+WORKDIR libcxxabi
+RUN cmake3 -B build . -DCMAKE_BUILD_TYPE=Release
+RUN cmake3 --build build
+RUN cp -a build/lib/. /usr/local/lib
+WORKDIR ..
+RUN rm -rf llvm libcxx libcxxabi
+
+ENV CC clang
+ENV CXX clang++
 
 FROM builder AS patches
 ADD https://api.github.com/repos/desktop-app/patches/git/refs/heads/master patches-version.json
@@ -625,6 +643,7 @@ WORKDIR ..
 
 # I couldn't make it work with direct ./configure call :(
 RUN echo './configure -prefix '$'\"''$QT_PREFIX'$'\"'' \
+	-platform linux-clang \
 	-release \
 	-force-debug-info \
 	-opensource \
