@@ -32,8 +32,7 @@ RUN yum -y install git meson ninja-build autoconf automake libtool patch \
 	pulseaudio-libs-devel mesa-libGL-devel mesa-libEGL-devel gtk3-devel \
 	perl-XML-Parser pkgconfig bison yasm file which xorg-x11-util-macros \
 	devtoolset-10-make devtoolset-10-gcc devtoolset-10-gcc-c++ \
-	devtoolset-10-binutils llvm-toolset-7.0 llvm-toolset-7.0-clang-devel \
-	llvm-toolset-7.0-llvm-devel && yum clean all
+	devtoolset-10-binutils devtoolset-10-libatomic-devel libatomic && yum clean all
 
 # Fix a bug with argument naming in CentOS 7 glibc
 RUN sed -i 's/char \*__block/char */' /usr/include/unistd.h
@@ -48,6 +47,27 @@ RUN curl -sSLo $CMAKE_FILE $GIT/Kitware/CMake/releases/download/v$CMAKE_VER/$CMA
 RUN sh $CMAKE_FILE --prefix=/opt/cmake --skip-license
 RUN ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
 RUN rm $CMAKE_FILE
+
+ENV LLVM_VERSION 12.0.0
+ENV LLVM_TARBALL_NAME clang+llvm-$LLVM_VERSION-x86_64-linux-sles12.4
+RUN curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVM_VERSION/$LLVM_TARBALL_NAME.tar.xz | tar -xJC /usr/local --strip-components=1
+
+# pre-built libcxxabi requires GLIBC_2.18, we have only 2.17
+RUN curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVM_VERSION/llvm-$LLVM_VERSION.src.tar.xz | tar -xJ --transform=s/^llvm-$LLVM_VERSION.src/llvm/
+RUN curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVM_VERSION/libcxx-$LLVM_VERSION.src.tar.xz | tar -xJ --transform=s/^libcxx-$LLVM_VERSION.src/libcxx/
+RUN curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVM_VERSION/libcxxabi-$LLVM_VERSION.src.tar.xz | tar -xJ --transform=s/^libcxxabi-$LLVM_VERSION.src/libcxxabi/
+WORKDIR libcxxabi
+RUN cmake -GNinja -B build . -DCMAKE_BUILD_TYPE=Release
+RUN cmake --build build --parallel
+RUN cp -a build/lib/. /usr/local/lib
+WORKDIR ..
+RUN rm -rf llvm libcxx libcxxabi
+
+ENV CC clang -fuse-ld=lld -Wno-unused-command-line-argument
+ENV CXX clang++ -stdlib=libc++ -fuse-ld=lld -Wno-unused-command-line-argument
+ENV LD ld.lld
+ENV LD_LIBRARY_PATH /usr/local/lib
+ENV CMAKE_LIBRARY_PATH /opt/rh/devtoolset-9/root/usr/lib/gcc/x86_64-redhat-linux/9
 
 FROM builder AS patches
 RUN git clone $GIT/desktop-app/patches.git && cd patches && git checkout 5368789dc7
@@ -473,6 +493,9 @@ RUN git fetch --depth=1 origin cc33e73618a981de7fd96385ecb34719de031f16
 RUN git reset --hard FETCH_HEAD
 
 RUN ./configure \
+	--cc="$CC" \
+	--cxx="$CXX" \
+	--ld="$CXX" \
 	--extra-cflags="-DCONFIG_SAFE_BITSTREAM_READER=1 $HFLAGS" \
 	--extra-cxxflags="-DCONFIG_SAFE_BITSTREAM_READER=1 $HFLAGS" \
 	--disable-debug \
@@ -716,6 +739,8 @@ RUN [ -n "${QT6}" ] || find ../../patches/qtwayland_${QT5_VER} -type f -print0 |
 WORKDIR ..
 
 RUN [ -n "${QT6}" ] || ./configure -prefix "$QT5_PREFIX" \
+	-platform linux-clang-libc++ \
+	-linker lld \
 	-release \
 	-force-debug-info \
 	-opensource \
@@ -757,6 +782,8 @@ RUN [ -z "${QT6}" ] || find ../../patches/qt5compat_${QT6_VER} -type f -print0 |
 WORKDIR ..
 
 RUN [ -z "${QT6}" ] || ./configure -prefix "$QT6_PREFIX" \
+	-platform linux-clang-libc++ \
+	-linker lld \
 	-release \
 	-force-debug-info \
 	-opensource \
