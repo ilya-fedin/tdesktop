@@ -638,6 +638,10 @@ QString ExecutablePathForShortcuts() {
 } // namespace Platform
 
 QString psAppDataPath() {
+	if (KSandbox::isSnap()) {
+		return qEnvironmentVariable("SNAP_USER_COMMON") + '/';
+	}
+
 	// Previously we used ~/.TelegramDesktop, so look there first.
 	// If we find data there, we should still use it.
 	auto home = QDir::homePath();

@@ -9,6 +9,8 @@ compression: lzo
 apps:
   telegram-desktop:
     command: usr/bin/telegram-desktop
+    command-chain:
+      - bin/telegram-launch
     common-id: org.telegram.desktop
     desktop: usr/share/applications/org.telegram.desktop.desktop
     autostart: telegram-desktop_telegram-desktop.desktop
@@ -81,6 +83,12 @@ parts:
       - rnnoise
       - tde2e
       - webrtc
+
+  telegram-launcher:
+    plugin: dump
+    source: snap/scripts
+    organize:
+      telegram-launch: bin/telegram-launch
 
   pkgs:
     plugin: nil

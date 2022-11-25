@@ -1,0 +1,9 @@
+#!/bin/bash
+
+previous_data_path=$SNAP_USER_DATA/.local/share/TelegramDesktop
+if [ -d "$previous_data_path" ]; then
+    mv "$previous_data_path"/* "$SNAP_USER_COMMON"
+    rmdir "$previous_data_path"
+fi
+
+exec "$@"
