@@ -11,19 +11,15 @@ architectures:
   - build-on: amd64
   - build-on: arm64
   - build-on: armhf
-  - build-on: ppc64el
 
 apps:
   telegram-desktop:
     command: usr/bin/telegram-desktop
-    command-chain:
-      - bin/desktop-launch
     common-id: org.telegram.desktop
     desktop: usr/share/applications/org.telegram.desktop.desktop
     autostart: telegram-desktop_telegram-desktop.desktop
+    extensions: [gnome]
     environment:
-      # Tell glib to use portals on file associations handling.
-      GTK_USE_PORTAL: 1
       # Use sandboxed ibus api
       IBUS_USE_PORTAL: 1
     plugs:
@@ -31,45 +27,14 @@ apps:
       - audio-playback
       - audio-record
       - camera
-      - desktop
-      - desktop-legacy
       - hardware-observe
       - home
       - network
       - network-status
-      - opengl
       - removable-media
       - unity7
-      - wayland
-      - x11
     slots:
       - tdesktop-mpris
-
-hooks:
-  configure:
-    command-chain:
-      - bin/hooks-configure-desktop
-    plugs:
-      - desktop
-
-plugs:
-  desktop:
-    mount-host-font-cache: false
-  # Support for common GTK themes
-  # https://forum.snapcraft.io/t/how-to-use-the-system-gtk-theme-via-the-gtk-common-themes-snap/6235
-  gsettings:
-  gtk-3-themes:
-    interface: content
-    target: $SNAP/data-dir/themes
-    default-provider: gtk-common-themes
-  icon-themes:
-    interface: content
-    target: $SNAP/data-dir/icons
-    default-provider: gtk-common-themes
-  sound-themes:
-    interface: content
-    target: $SNAP/data-dir/sounds
-    default-provider: gtk-common-themes
 
 slots:
   tdesktop-mpris:
@@ -78,23 +43,17 @@ slots:
 
 layout:
   /usr/share/alsa:
-    bind: $SNAP/usr/share/alsa
+    bind: $SNAP/gnome-platform/usr/share/alsa
   /usr/share/pipewire:
     bind: $SNAP/usr/share/pipewire
   /usr/share/X11:
-    bind: $SNAP/usr/share/X11
-  /usr/lib/$CRAFT_ARCH_TRIPLET/gtk-3.0:
-    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/gtk-3.0
+    bind: $SNAP/gnome-platform/usr/share/X11
   /usr/lib/$CRAFT_ARCH_TRIPLET/pipewire-0.3:
     bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/pipewire-0.3
   /usr/lib/$CRAFT_ARCH_TRIPLET/spa-0.2:
     bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/spa-0.2
   /usr/lib/$CRAFT_ARCH_TRIPLET/webkit2gtk-4.1:
-    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/webkit2gtk-4.1
-
-package-repositories:
-  - type: apt
-    ppa: kisak/kisak-mesa
+    bind: $SNAP/gnome-platform/usr/lib/$CRAFT_ARCH_TRIPLET/webkit2gtk-4.1
 
 parts:
   telegram:
@@ -110,11 +69,9 @@ parts:
       - python3
       - libasound2-dev
       - libavif-dev
-      - libglib2.0-dev
       - libheif-dev
       - libopus-dev
       - libpulse-dev
-      - libwayland-dev
       - libxcb1-dev
       - libxcb-keysyms1-dev
       - libxcb-record0-dev
@@ -123,19 +80,14 @@ parts:
     stage-packages:
       - libasound2
       - libavif13
-      - libglib2.0-0
       - libheif1
       - libopus0
       - libpulse0
-      - libwayland-client0
-      - libwebkit2gtk-4.1-0
       - libxcb1
       - libxcb-keysyms1
       - libxcb-record0
       - libxcb-screensaver0
       - zlib1g
-      - glib-networking
-      - systemd
     cmake-generator: Ninja
     cmake-parameters:
       - -DCMAKE_BUILD_TYPE=Release
@@ -165,9 +117,7 @@ parts:
       craftctl default
       rm -rf "$CRAFT_PART_INSTALL/usr/share/icons"
     stage:
-      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libjpeg.so.8.2.2
-    prime:
-      - -./lib/systemd
+      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libjpeg.so*
     after:
       - ffmpeg
       - libjxl
@@ -191,37 +141,27 @@ parts:
       rm -rf patches
     stage: [-./*]
 
-  desktop-qt:
-    source: https://github.com/desktop-app/snapcraft-desktop-helpers.git
-    source-subdir: qt
-    plugin: make
-    make-parameters: ["FLAVOR=qt5"]
-    build-packages:
-      - build-essential
-      - dpkg-dev
-      - gtk-update-icon-cache
-      - libglib2.0-bin
-      - libgtk-3-0
-    stage-packages:
-      - libxkbcommon0
-      - shared-mime-info
-      - libgdk-pixbuf-2.0-0
-      - locales-all
-      - xdg-user-dirs
+  cleanup:
+    plugin: nil
     override-prime: |
-      snapcraftctl prime
-      update-mime-database usr/share/mime
-      glib-compile-schemas usr/share/glib-2.0/schemas
-      for theme in usr/share/icons/*; do
-        if [ -f "$theme/index.theme" ] && [ ! -f "$theme/icon-theme.cache" ]; then
-          update-icon-caches "$theme"
-        fi
+      for i in core22 gnome-42-2204; do
+        cd /snap/$i/current && find . -type f,l ! -path '*/libjpeg.so*' -exec rm -f "$CRAFT_PRIME/{}" "$CRAFT_PRIME/usr/{}" \;
       done
-      GTK_PATH=$PWD/usr/lib/$CRAFT_ARCH_TRIPLET/gtk-3.0 /usr/lib/$CRAFT_ARCH_TRIPLET/libgtk-3-0/gtk-query-immodules-3.0 > usr/lib/$CRAFT_ARCH_TRIPLET/gtk-3.0/3.0.0/immodules/immodules.cache
-    stage:
-      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libjpeg.so.8.2.2
+      for i in bug doc lintian man; do
+        rm -rf $CRAFT_PRIME/usr/share/$i
+      done
+      find $CRAFT_PRIME -type d -empty -delete
     after:
       - telegram
+
+  systemd:
+    plugin: nil
+    stage-packages:
+      - systemd
+    stage:
+      - ./usr/bin/systemd-detect-virt
+    after:
+      - cleanup
 
   ffmpeg:
     plugin: nil
@@ -238,7 +178,11 @@ parts:
       - libswresample3
       - libswscale5
     stage:
-      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libjpeg.so.8.2.2
+      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libcairo*
+      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libgdk_pixbuf-2.0.so*
+      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libharfbuzz.so*
+      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libjpeg.so*
+      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libpango*
     after:
       - mozjpeg
 
@@ -251,10 +195,7 @@ parts:
       - meson
       - mm-common
       - ninja-build
-      - libglib2.0-dev
       - libxml-parser-perl
-    stage-packages:
-      - libglib2.0-0
     meson-parameters:
       - --buildtype=release
       - --prefix=/usr
@@ -411,10 +352,7 @@ parts:
       - libegl-dev
       - libfontconfig1-dev
       - libfreetype-dev
-      - libglib2.0-dev
       - libglx-dev
-      - libgtk-3-dev
-      - libharfbuzz-dev
       - libice-dev
       - libicu-dev
       - liblcms2-dev
@@ -423,7 +361,6 @@ parts:
       - libpng-dev
       - libsm-dev
       - libvulkan-dev
-      - libwayland-dev
       - libx11-dev
       - libx11-xcb-dev
       - libxcb1-dev
@@ -449,10 +386,7 @@ parts:
       - libegl1
       - libfontconfig1
       - libfreetype6
-      - libglib2.0-0
       - libglx0
-      - libgtk-3-0
-      - libharfbuzz0b
       - libice6
       - libicu70
       - liblcms2-2
@@ -461,10 +395,6 @@ parts:
       - libpng16-16
       - libsm6
       - libvulkan1
-      - libwayland-client0
-      - libwayland-cursor0
-      - libwayland-egl1
-      - libwayland-server0
       - libx11-6
       - libx11-xcb1
       - libxcb1
@@ -512,7 +442,9 @@ parts:
       cmake --build . -j$CRAFT_PARALLEL_BUILD_COUNT
       DESTDIR="$CRAFT_PART_INSTALL" cmake --install .
     stage:
-      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libjpeg.so.8.2.2
+      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libjpeg.so*
+      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libwayland-server.so*
+      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libwayland-client.so*
     prime:
       - -./usr/bin
       - -./usr/doc
@@ -565,7 +497,6 @@ parts:
       - libegl-dev
       - libgbm-dev
       - libgl-dev
-      - libglib2.0-dev
       - libopenh264-dev
       - libopus-dev
       - libpipewire-0.3-dev
@@ -583,7 +514,6 @@ parts:
       - libegl1
       - libgbm1
       - libgl1
-      - libglib2.0-0
       - libopenh264-6
       - libopus0
       - libvpx7
@@ -602,6 +532,9 @@ parts:
       - -DCMAKE_INSTALL_PREFIX=/usr
       - -DCMAKE_LIBRARY_PATH=$CRAFT_STAGE/usr/lib/$CRAFT_ARCH_TRIPLET
       - -DCMAKE_INCLUDE_PATH=$CRAFT_STAGE/usr/include
+    stage:
+      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libwayland-server.so*
+      - -./usr/lib/$CRAFT_ARCH_TRIPLET/libwayland-client.so*
     prime:
       - -./usr/include
       - -./usr/lib/$CRAFT_ARCH_TRIPLET/cmake
