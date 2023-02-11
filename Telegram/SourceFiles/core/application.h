@@ -315,6 +315,7 @@ public:
 	[[nodiscard]] rpl::producer<> materializeLocalDraftsRequests() const;
 
 	void switchDebugMode();
+	void refreshGL();
 
 	void preventOrInvoke(Fn<void()> &&callback);
 

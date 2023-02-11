@@ -31,6 +31,7 @@ public:
 	const QStringList &arguments() const;
 	QString initialWorkingDir() const;
 	bool customWorkingDir() const;
+	bool noGL() const;
 
 	uint64 installationTag() const;
 
