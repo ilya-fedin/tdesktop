@@ -131,6 +131,7 @@ private:
 	mutable std::unique_ptr<Ui::RippleAnimation> _ripple;
 
 	struct SponsoredData final {
+		SponsoredData() {}
 		PeerData *peer = nullptr;
 		Ui::PeerUserpicView userpicView;
 		QString buttonText;
