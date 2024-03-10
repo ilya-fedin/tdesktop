@@ -32,7 +32,6 @@ protected:
 	void doMaybeFlashBounce(Fn<void()> flashBounce) override;
 
 private:
-	friend void Create(Window::Notifications::System *system);
 	class Private;
 	const std::unique_ptr<Private> _private;
 
