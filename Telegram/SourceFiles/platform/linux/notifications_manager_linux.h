@@ -15,7 +15,6 @@ namespace Notifications {
 class Manager : public Window::Notifications::NativeManager {
 public:
 	Manager(not_null<Window::Notifications::System*> system);
-	void clearNotification(NotificationId id);
 	~Manager();
 
 protected:
@@ -38,7 +37,6 @@ protected:
 	void doMaybeFlashBounce(Fn<void()> flashBounce) override;
 
 private:
-	friend void Create(Window::Notifications::System *system);
 	class Private;
 	const std::unique_ptr<Private> _private;
 

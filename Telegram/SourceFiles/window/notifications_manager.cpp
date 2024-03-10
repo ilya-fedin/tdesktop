@@ -40,10 +40,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include <QtGui/QWindow>
 
-#if __has_include(<gio/gio.hpp>)
-#include <gio/gio.hpp>
-#endif // __has_include(<gio/gio.hpp>)
-
 namespace Window {
 namespace Notifications {
 namespace {
@@ -108,24 +104,6 @@ constexpr auto kSystemAlertDuration = crl::time(0);
 }
 
 } // namespace
-
-const char kOptionGNotification[] = "gnotification";
-
-base::options::toggle OptionGNotification({
-	.id = kOptionGNotification,
-	.name = "GNotification",
-	.description = "Force enable GLib's GNotification."
-		" When disabled, autodetect is used.",
-	.scope = [] {
-#if __has_include(<gio/gio.hpp>)
-		using namespace gi::repository;
-		return bool(Gio::Application::get_default());
-#else // __has_include(<gio/gio.hpp>)
-		return false;
-#endif // __has_include(<gio/gio.hpp>)
-	},
-	.restartRequired = true,
-});
 
 struct System::Waiter {
 	NotificationInHistoryKey key;
