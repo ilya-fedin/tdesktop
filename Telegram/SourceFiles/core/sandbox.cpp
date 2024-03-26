@@ -8,6 +8,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/sandbox.h"
 
 #include "base/platform/base_platform_info.h"
+#include "platform/platform_integration.h"
 #include "platform/platform_specific.h"
 #include "mainwidget.h"
 #include "mainwindow.h"
@@ -325,6 +326,8 @@ void Sandbox::socketReading() {
 		"activating and quitting..."
 		).arg(processId
 		).arg(windowId));
+	// platform cli argument handling
+	[[maybe_unused]] const auto integration = Platform::Integration::Create();
 	return Quit();
 }
 

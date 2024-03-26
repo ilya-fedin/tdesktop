@@ -458,6 +458,10 @@ const QStringList &Launcher::arguments() const {
 	return _arguments;
 }
 
+const std::vector<std::string> &Launcher::unhandledArguments() const {
+	return _unhandledArguments;
+}
+
 QString Launcher::initialWorkingDir() const {
 	return _initialWorkingDir;
 }
@@ -537,6 +541,8 @@ void Launcher::processArguments() {
 			if (it != parseMap.end()) {
 				parsingFormat = it->second;
 				parseResult[parsingKey] = QStringList();
+			} else {
+				_unhandledArguments.push_back(argument.toStdString());
 			}
 		} break;
 		}

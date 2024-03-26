@@ -11,6 +11,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "base/platform/base_platform_info.h"
 #include "base/platform/linux/base_linux_xdp_utilities.h"
 #include "window/notifications_manager.h"
+#include "core/launcher.h"
 #include "core/sandbox.h"
 #include "core/application.h"
 #include "core/core_settings.h"
@@ -21,6 +22,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include <gio/gio.hpp>
 #include <xdpinhibit/xdpinhibit.hpp>
+
+#include <dlfcn.h>
 
 namespace Platform {
 namespace {
@@ -76,17 +79,21 @@ public:
 	}
 
 	void activate_() noexcept override {
-		Core::Sandbox::Instance().customEnterFromEventLoop([] {
-			Core::App().activate();
-		});
+		if (Core::IsAppLaunched()) {
+			InvokeQueued(&Core::App(), [] {
+				Core::App().activate();
+			});
+		}
 	}
 
 	void open_(
 			gi::Collection<gi::DSpan, ::GFile*, gi::transfer_none_t> files,
 			const gi::cstring_v hint) noexcept override {
 		for (auto file : files) {
-			QFileOpenEvent e(QUrl(QString::fromStdString(file.get_uri())));
-			QGuiApplication::sendEvent(qApp, &e);
+			QCoreApplication::postEvent(
+				qApp,
+				new QFileOpenEvent(
+					QUrl(QString::fromStdString(file.get_uri()))));
 		}
 	}
 
@@ -113,6 +120,18 @@ Application::Application()
 		set_application_id(appId);
 	}
 	set_flags(Gio::ApplicationFlags::HANDLES_OPEN_);
+
+	// glib 2.80+, we keep glib 2.56+ compatibility
+	static const auto set_version = [] {
+		// reset dlerror after dlsym call
+		const auto guard = gsl::finally([] { dlerror(); });
+		return reinterpret_cast<void(*)(GApplication*, const gchar*)>(
+			dlsym(RTLD_DEFAULT, "g_application_set_version"));
+	}();
+
+	if (set_version) {
+		set_version(gobj_(), AppVersionStr);
+	}
 
 	auto actionMap = Gio::ActionMap(*this);
 
@@ -163,16 +182,18 @@ Application::Application()
 	});
 
 	actionMap.add_action(notificationMarkAsReadAction);
-}
 
-gi::ref_ptr<Application> MakeApplication() {
-	const auto result = gi::make_ref<Application>();
-	if (const auto registered = result->register_(); !registered) {
-		LOG(("App Error: Failed to register: %1").arg(
-			registered.error().message_().c_str()));
-		return nullptr;
+	gi::detail::Collection<
+		gi::detail::Span<0>,
+		char*,
+		gi::transfer_full_t
+	> arguments = Core::Launcher::Instance().unhandledArguments();
+	int status;
+	local_command_line_(arguments, status);
+
+	if (!get_is_registered() || get_is_remote()) {
+		_exit(status);
 	}
-	return result;
 }
 
 class LinuxIntegration final : public Integration, public base::has_weak_ptr {
@@ -194,7 +215,7 @@ private:
 };
 
 LinuxIntegration::LinuxIntegration()
-: _application(MakeApplication())
+: _application(gi::make_ref<Application>())
 , _darkModeWatcher(
 	"org.freedesktop.appearance",
 	"color-scheme",

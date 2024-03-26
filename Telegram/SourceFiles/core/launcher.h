@@ -29,6 +29,7 @@ public:
 	virtual int exec();
 
 	const QStringList &arguments() const;
+	const std::vector<std::string> &unhandledArguments() const;
 	QString initialWorkingDir() const;
 	bool customWorkingDir() const;
 
@@ -83,6 +84,7 @@ private:
 	int _argc;
 	char **_argv;
 	QStringList _arguments;
+	std::vector<std::string> _unhandledArguments;
 	BaseIntegration _baseIntegration;
 
 	QString _initialWorkingDir;
