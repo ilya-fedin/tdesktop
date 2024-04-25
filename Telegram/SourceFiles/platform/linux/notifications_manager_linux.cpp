@@ -22,7 +22,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "base/weak_ptr.h"
 #include "window/notifications_utilities.h"
 
-#include <QtCore/QBuffer>
 #include <QtCore/QVersionNumber>
 #include <QtGui/QGuiApplication>
 
@@ -188,7 +187,7 @@ public:
 
 	void show();
 	void close();
-	void setImage(QImage image);
+	void setImage(const QString &path);
 
 private:
 	const not_null<Manager*> _manager;
@@ -491,20 +490,10 @@ void NotificationData::close() {
 	_manager->clearNotification(_id);
 }
 
-void NotificationData::setImage(QImage image) {
+void NotificationData::setImage(const QString &path) {
 	if (_notification) {
-		const auto imageData = std::make_shared<QByteArray>();
-		QBuffer buffer(imageData.get());
-		buffer.open(QIODevice::WriteOnly);
-		image.save(&buffer, "PNG");
-
 		_notification.set_icon(
-			Gio::BytesIcon::new_(
-				GLib::Bytes::new_with_free_func(
-					reinterpret_cast<const uchar*>(imageData->constData()),
-					imageData->size(),
-					[imageData] {})));
-
+			Gio::FileIcon::new_(Gio::File::new_for_path(path.toStdString())));
 		return;
 	}
 
@@ -512,6 +501,7 @@ void NotificationData::setImage(QImage image) {
 		return;
 	}
 
+	QImage image(path);
 	if (image.hasAlphaChannel()) {
 		image.convertTo(QImage::Format_RGBA8888);
 	} else {
@@ -567,6 +557,8 @@ private:
 	base::flat_map<
 		ContextId,
 		base::flat_map<MsgId, Notification>> _notifications;
+
+	Window::Notifications::CachedUserpics _cachedUserpics;
 
 	XdgNotifications::NotificationsProxy _proxy;
 	XdgNotifications::Notifications _interface;
@@ -797,8 +789,9 @@ void Manager::Private::showNotification(
 	}
 
 	if (!options.hideNameAndPhoto) {
+		const auto userpicKey = peer->userpicUniqueKey(userpicView);
 		notification->setImage(
-			Window::Notifications::GenerateUserpic(peer, userpicView));
+			_cachedUserpics.get(userpicKey, peer, userpicView));
 	}
 
 	auto i = _notifications.find(key);
