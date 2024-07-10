@@ -329,6 +329,8 @@ void Launcher::init() {
 	QApplication::setFallbackSessionManagementEnabled(false);
 #endif // Qt < 6.0.0
 
+	QApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+
 	initHook();
 }
 
