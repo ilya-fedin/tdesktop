@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "mainwindow.h"
 
+#include "base/platform/base_platform_info.h"
 #include "data/data_document.h"
 #include "data/data_session.h"
 #include "data/data_document_media.h"
@@ -49,6 +50,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_window.h"
 
 #include <QtGui/QWindow>
+#include <QtGui/QBackingStore>
 
 namespace {
 
@@ -551,6 +553,15 @@ void MainWindow::setInnerFocus() {
 
 bool MainWindow::eventFilter(QObject *object, QEvent *e) {
 	switch (e->type()) {
+	case QEvent::Expose: {
+		if (Platform::IsWindows() && object == windowHandle() && !backingStore()->size().isEmpty()) {
+			const auto region = static_cast<QExposeEvent*>(e)->region();
+			backingStore()->beginPaint(region);
+			render(backingStore()->paintDevice(), region.boundingRect().topLeft(), region);
+			backingStore()->endPaint();
+		}
+	} break;
+
 	case QEvent::KeyPress: {
 		if (Logs::DebugEnabled()
 			&& object == windowHandle()) {

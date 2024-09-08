@@ -74,7 +74,7 @@ void Progress::paintEvent(QPaintEvent *e) {
 void Progress::animationStep() {
 	if (!anim::Disabled()) {
 		_animationStepRequests.fire({});
-		update();
+		Ui::UpdateWidget(this);
 	}
 }
 

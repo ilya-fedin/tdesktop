@@ -263,7 +263,7 @@ void TopBarWidget::updateConnectingState() {
 void TopBarWidget::connectingAnimationCallback() {
 	if (!anim::Disabled()) {
 		updateConnectingState();
-		update();
+		Ui::UpdateWidget(this);
 	}
 }
 
