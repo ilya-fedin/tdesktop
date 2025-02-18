@@ -417,11 +417,10 @@ bool ByDefault() {
 	return false;
 }
 
-void Create(Window::Notifications::System *system) {
-	system->setManager([=] {
-		auto result = std::make_unique<Manager>(system);
-		return result->init() ? std::move(result) : nullptr;
-	});
+std::unique_ptr<Window::Notifications::Manager> Create(
+		Window::Notifications::System *system) {
+	auto result = std::make_unique<Manager>(system);
+	return result->init() ? std::move(result) : nullptr;
 }
 
 class Manager::Private {

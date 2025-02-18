@@ -93,7 +93,6 @@ public:
 	[[nodiscard]] Main::Session *findSession(uint64 sessionId) const;
 
 	void createManager();
-	void setManager(Fn<std::unique_ptr<Manager>()> create);
 
 	void checkDelayed();
 	void schedule(Data::ItemNotification notification);

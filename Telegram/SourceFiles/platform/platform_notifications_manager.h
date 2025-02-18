@@ -20,7 +20,8 @@ void MaybeFlashBounceForCustom(Fn<void()> flashBounce);
 [[nodiscard]] bool Supported();
 [[nodiscard]] bool Enforced();
 [[nodiscard]] bool ByDefault();
-void Create(Window::Notifications::System *system);
+[[nodiscard]] std::unique_ptr<Window::Notifications::Manager> Create(
+	Window::Notifications::System *system);
 
 } // namespace Notifications
 } // namespace Platform

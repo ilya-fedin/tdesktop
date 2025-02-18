@@ -205,8 +205,9 @@ bool ByDefault() {
 	return Supported();
 }
 
-void Create(Window::Notifications::System *system) {
-	system->setManager([=] { return std::make_unique<Manager>(system); });
+std::unique_ptr<Window::Notifications::Manager> Create(
+		Window::Notifications::System *system) {
+	return std::make_unique<Manager>(system);
 }
 
 class Manager::Private : public QObject {

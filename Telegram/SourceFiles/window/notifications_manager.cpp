@@ -145,8 +145,7 @@ System::NotificationInHistoryKey::NotificationInHistoryKey(
 
 System::System()
 : _waitTimer([=] { showNext(); })
-, _waitForAllGroupedTimer([=] { showGrouped(); })
-, _manager(std::make_unique<DummyManager>(this)) {
+, _waitForAllGroupedTimer([=] { showGrouped(); }) {
 	settingsChanged(
 	) | rpl::start_with_next([=](ChangeType type) {
 		if (type == ChangeType::DesktopEnabled) {
@@ -161,11 +160,6 @@ System::System()
 }
 
 void System::createManager() {
-	Platform::Notifications::Create(this);
-}
-
-void System::setManager(Fn<std::unique_ptr<Manager>()> create) {
-	Expects(_manager != nullptr);
 	const auto guard = gsl::finally([&] {
 		Ensures(_manager != nullptr);
 	});
@@ -177,7 +171,7 @@ void System::setManager(Fn<std::unique_ptr<Manager>()> create) {
 			return;
 		}
 
-		if (auto manager = create()) {
+		if (auto manager = Platform::Notifications::Create(this)) {
 			_manager = std::move(manager);
 			return;
 		}
