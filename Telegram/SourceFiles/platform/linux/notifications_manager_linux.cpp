@@ -87,6 +87,7 @@ public:
 private:
 	const not_null<Manager*> _manager;
 	Gio::Application _application;
+	Window::Notifications::CachedUserpics _cachedUserpics;
 	base::flat_map<
 		ContextId,
 		base::flat_map<MsgId, rpl::lifetime>> _notifications;
@@ -234,19 +235,29 @@ void Manager::Private::showNotification(
 	}
 
 	if (!options.hideNameAndPhoto) {
-		QByteArray imageData;
-		QBuffer buffer(&imageData);
-		buffer.open(QIODevice::WriteOnly);
-		Window::Notifications::GenerateUserpic(peer, userpicView).save(
-			&buffer,
-			"PNG");
+		if (KSandbox::isFlatpak()) {
+			QByteArray imageData;
+			QBuffer buffer(&imageData);
+			buffer.open(QIODevice::WriteOnly);
+			Window::Notifications::GenerateUserpic(peer, userpicView).save(
+				&buffer,
+				"PNG");
 
-		notification.set_icon(
-			Gio::BytesIcon::new_(
-				GLib::Bytes::new_with_free_func(
-					reinterpret_cast<const uchar*>(imageData.constData()),
-					imageData.size(),
-					[imageData] {})));
+			notification.set_icon(
+				Gio::BytesIcon::new_(
+					GLib::Bytes::new_with_free_func(
+						reinterpret_cast<const uchar*>(imageData.constData()),
+						imageData.size(),
+						[imageData] {})));
+		} else {
+			notification.set_icon(
+				Gio::FileIcon::new_(
+					Gio::File::new_for_path(
+						_cachedUserpics.get(
+							peer->userpicUniqueKey(userpicView),
+							peer,
+							userpicView).toStdString())));
+		}
 	}
 
 	const auto id = Gio::dbus_generate_guid();
