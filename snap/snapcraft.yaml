@@ -11,7 +11,7 @@ apps:
     command: usr/bin/telegram-desktop
     common-id: org.telegram.desktop
     desktop: usr/share/applications/org.telegram.desktop.desktop
-    autostart: telegram-desktop_telegram-desktop.desktop
+    autostart: org.telegram.desktop.desktop
     extensions: [gnome]
     plugs:
       - audio-playback
@@ -25,7 +25,14 @@ apps:
       - removable-media
       - unity7
     slots:
+      - dbus-svc
       - mpris
+
+slots:
+  dbus-svc:
+    interface: dbus
+    bus: session
+    name: org.telegram.desktop
 
 parts:
   telegram:

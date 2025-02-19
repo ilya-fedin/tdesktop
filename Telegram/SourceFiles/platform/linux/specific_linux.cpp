@@ -388,6 +388,13 @@ bool GenerateDesktopFile(
 			md5Hash));
 	}
 
+	if (KSandbox::isSnap()) {
+		QFile::remove(targetPath
+			+ qEnvironmentVariable("SNAP_INSTANCE_NAME")
+			+ '_'
+			+ cExeName());
+	}
+
 	return true;
 }
 
@@ -681,12 +688,6 @@ void start() {
 	QGuiApplication::setDesktopFileName([&] {
 		if (KSandbox::isFlatpak()) {
 			return qEnvironmentVariable("FLATPAK_ID");
-		}
-
-		if (KSandbox::isSnap()) {
-			return qEnvironmentVariable("SNAP_INSTANCE_NAME")
-				+ '_'
-				+ cExeName();
 		}
 
 		if (!Core::UpdaterDisabled()) {
