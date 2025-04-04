@@ -1,0 +1,223 @@
+{
+  "dependencies": [
+    "ada-url",
+    {
+      "name": "angle",
+      "platform": "windows & !arm"
+    },
+    {
+      "name": "boost-algorithm",
+      "platform": "linux"
+    },
+    {
+      "name": "boost-property-tree",
+      "platform": "linux"
+    },
+    {
+      "name": "boost-range",
+      "platform": "linux"
+    },
+    "boost-regex",
+    "breakpad",
+    {
+      "name": "cld3",
+      "platform": "!osx"
+    },
+    {
+      "name": "crashpad",
+      "platform": "osx"
+    },
+    {
+      "name": "dispatch",
+      "platform": "linux"
+    },
+    {
+      "name": "ffmpeg",
+      "features": [
+        "dav1d",
+        {
+          "name": "nvcodec",
+          "platform": "!osx & !(arm64 & windows)"
+        },
+        "openh264",
+        "opus",
+        "vpx"
+      ]
+    },
+    {
+      "name": "hunspell",
+      "platform": "!osx"
+    },
+    {
+      "name": "kf5coreaddons",
+      "platform": "windows & !arm"
+    },
+    {
+      "name": "kf6coreaddons",
+      "platform": "!windows | arm"
+    },
+    {
+      "name": "libavif",
+      "features": [
+        "dav1d"
+      ]
+    },
+    {
+      "name": "libheif",
+      "default-features": false
+    },
+    "libjpeg-turbo",
+    "libjxl",
+    "liblzma",
+    "lz4",
+    "minizip",
+    "ms-gsl",
+    "nayuki-qr-code-generator",
+    {
+      "name": "openal-soft",
+      "features": [
+        {
+          "name": "pipewire",
+          "platform": "linux"
+        }
+      ]
+    },
+    "openssl",
+    {
+      "name": "qt5-base",
+      "platform": "windows & !arm",
+      "default-features": false,
+      "features": [
+        "angle"
+      ]
+    },
+    {
+      "name": "qt5-imageformats",
+      "platform": "windows & !arm",
+      "default-features": false,
+      "features": [
+        "webp"
+      ]
+    },
+    {
+      "name": "qt5-svg",
+      "platform": "windows & !arm"
+    },
+    {
+      "name": "qtbase",
+      "platform": "!windows | arm",
+      "default-features": false,
+      "features": [
+        {
+          "name": "egl",
+          "platform": "linux"
+        },
+        {
+          "name": "dbus",
+          "platform": "linux"
+        },
+        {
+          "name": "fontconfig",
+          "platform": "linux"
+        },
+        "freetype",
+        {
+          "name": "glib",
+          "platform": "linux"
+        },
+        {
+          "name": "gtk3",
+          "platform": "linux"
+        },
+        "gui",
+        "harfbuzz",
+        "jpeg",
+        "lcms",
+        "network",
+        "opengl",
+        {
+          "name": "openssl",
+          "platform": "linux"
+        },
+        "pcre2",
+        "png",
+        {
+          "name": "securetransport",
+          "platform": "osx"
+        },
+        "sessionmanager",
+        "thread",
+        {
+          "name": "vulkan",
+          "platform": "!osx"
+        },
+        "widgets",
+        {
+          "name": "wayland",
+          "platform": "linux"
+        },
+        {
+          "name": "xcb",
+          "platform": "linux"
+        },
+        {
+          "name": "xcb-xlib",
+          "platform": "linux"
+        },
+        {
+          "name": "xkb",
+          "platform": "linux"
+        },
+        {
+          "name": "xkbcommon-x11",
+          "platform": "linux"
+        },
+        {
+          "name": "xlib",
+          "platform": "linux"
+        }
+      ]
+    },
+    {
+      "name": "qtdeclarative",
+      "platform": "linux"
+    },
+    {
+      "name": "qtimageformats",
+      "platform": "!windows | arm",
+      "default-features": false,
+      "features": [
+        "webp"
+      ]
+    },
+    {
+      "name": "qtsvg",
+      "platform": "!windows | arm"
+    },
+    {
+      "name": "qtwayland",
+      "platform": "linux",
+      "features": [
+        "qml"
+      ]
+    },
+    "range-v3",
+    "rlottie",
+    "rnnoise",
+    "tde2e",
+    "tg-owt",
+    "tl-expected",
+    {
+      "name": "webview2",
+      "platform": "windows"
+    },
+    "xxhash",
+    "zlib"
+  ],
+  "overrides": [
+    {
+      "name": "webview2",
+      "version": "1.0.2277.86"
+    }
+  ]
+}
