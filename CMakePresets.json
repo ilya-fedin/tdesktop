@@ -1,0 +1,35 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "vcpkg",
+      "hidden": true,
+      "generator": "Ninja",
+      "toolchainFile": "${sourceDir}/../Libraries/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "environment": {
+        "LOCALAPPDATA": "${sourceDir}/../Libraries/LocalAppData",
+        "XDG_CACHE_HOME": "${sourceDir}/../Libraries/.cache"
+      },
+      "cacheVariables": {
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "10.13",
+        "DESKTOP_APP_USE_PACKAGED": true
+      }
+    },
+    {
+      "name": "Debug",
+      "inherits": "vcpkg",
+      "binaryDir": "${sourceDir}/out/Debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "Release",
+      "inherits": "vcpkg",
+      "binaryDir": "${sourceDir}/out/Release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ]
+}

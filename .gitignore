@@ -21,6 +21,7 @@ ipch/
 .vscode/
 .cache/
 compile_commands.json
+CMakeUserPresets.json
 
 /Telegram/log.txt
 /Telegram/data

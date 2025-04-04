@@ -7,7 +7,8 @@
                 "C_Cpp.intelliSenseEngine": "disabled",
                 "cmake.generator": "Ninja Multi-Config",
                 "cmake.buildDirectory": "${workspaceFolder}/out",
-                "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json"
+                "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
+                "cmake.useCMakePresets": "never"
             },
             "extensions": [
                 "ms-vscode.cpptools-extension-pack",

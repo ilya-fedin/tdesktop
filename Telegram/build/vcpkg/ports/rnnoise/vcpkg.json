@@ -1,0 +1,14 @@
+{
+  "name": "rnnoise",
+  "version-string": "d8ea2b0ec6a88f8a68d6904d75e33b4f09cb2987",
+  "dependencies": [
+    {
+      "name" : "vcpkg-cmake",
+      "host" : true
+    },
+    {
+      "name" : "vcpkg-cmake-config",
+      "host" : true
+    }
+  ]
+}

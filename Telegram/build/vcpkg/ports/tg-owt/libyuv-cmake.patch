@@ -1,0 +1,109 @@
+From dfcd6b8012967564cc6e104a9ccb9422fec78d0f Mon Sep 17 00:00:00 2001
+From: Ilya Fedin <fedin-ilja2010@ya.ru>
+Date: Mon, 29 Jul 2024 02:31:24 +0400
+Subject: [PATCH] CMake: Support external libyuv
+
+---
+ CMakeLists.txt             |  8 +++++---
+ cmake/external.cmake       | 20 ++++++++++++++++++++
+ cmake/libwebrtcbuild.cmake |  5 +----
+ 3 files changed, 26 insertions(+), 7 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e5853356..3e1309b6 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -74,7 +74,6 @@ include(cmake/generate_field_trials.cmake)
+ include(cmake/external.cmake)
+ include(cmake/libpffft.cmake)
+ include(cmake/librnnoise.cmake)
+-include(cmake/libyuv.cmake)
+ if (APPLE)
+     include(cmake/libsdkmacos.cmake)
+ endif()
+@@ -130,7 +129,6 @@ target_link_libraries(tg_owt
+ PRIVATE
+     tg_owt::libpffft
+     tg_owt::librnnoise
+-    tg_owt::libyuv
+ )
+ 
+ if (is_x86 OR is_x64)
+@@ -152,6 +150,7 @@ link_libabsl(tg_owt)
+ link_libopenh264(tg_owt)
+ link_libsrtp(tg_owt)
+ link_libvpx(tg_owt)
++link_libyuv(tg_owt)
+ link_crc32c(tg_owt)
+ link_dl(tg_owt)
+ 
+@@ -2644,7 +2643,6 @@ list(APPEND export_targets
+     libwebrtcbuild
+     libpffft
+     librnnoise
+-    libyuv
+ )
+ if (NOT absl_FOUND)
+     include(cmake/libabsl.cmake)
+@@ -2656,6 +2654,10 @@ if (NOT SRTP_FOUND)
+ else()
+     target_compile_definitions(tg_owt PRIVATE WEBRTC_EXTERNAL_SRTP)
+ endif()
++if (NOT TG_OWT_YUV_LIBRARIES OR NOT TG_OWT_YUV_INCLUDE_DIRS)
++    include(cmake/libyuv.cmake)
++    list(APPEND export_targets libyuv)
++endif()
+ if (NOT Crc32c_FOUND)
+     include(cmake/libcrc32c.cmake)
+     list(APPEND export_targets libcrc32c)
+diff --git a/cmake/external.cmake b/cmake/external.cmake
+index 0bcdf604..cf48dc29 100644
+--- a/cmake/external.cmake
++++ b/cmake/external.cmake
+@@ -171,6 +171,26 @@ function(link_libvpx target_name)
+     endif()
+ endfunction()
+ 
++# libyuv
++function(link_libyuv target_name)
++    set(scope PRIVATE)
++    get_target_property(target_type ${target_name} TYPE)
++    if (${target_type} STREQUAL "INTERFACE_LIBRARY")
++        set(scope INTERFACE)
++    endif()
++    if (TG_OWT_PACKAGED_BUILD)
++        find_library(TG_OWT_YUV_LIBRARIES yuv)
++        find_path(TG_OWT_YUV_INCLUDE_DIRS libyuv.h)
++        if (TG_OWT_YUV_LIBRARIES AND TG_OWT_YUV_INCLUDE_DIRS)
++            target_link_libraries(${target_name} ${scope} ${TG_OWT_YUV_LIBRARIES})
++            target_include_directories(${target_name} SYSTEM ${scope} ${TG_OWT_YUV_INCLUDE_DIRS})
++        endif()
++    endif()
++    if (NOT TG_OWT_YUV_LIBRARIES OR NOT TG_OWT_YUV_INCLUDE_DIRS)
++        target_link_libraries(${target_name} ${scope} tg_owt::libyuv)
++    endif()
++endfunction()
++
+ # crc32c
+ function(link_crc32c target_name)
+     if (TG_OWT_PACKAGED_BUILD)
+diff --git a/cmake/libwebrtcbuild.cmake b/cmake/libwebrtcbuild.cmake
+index 50725479..fb8559cf 100644
+--- a/cmake/libwebrtcbuild.cmake
++++ b/cmake/libwebrtcbuild.cmake
+@@ -1,11 +1,8 @@
+ add_library(libwebrtcbuild INTERFACE)
+ add_library(tg_owt::libwebrtcbuild ALIAS libwebrtcbuild)
+ 
+-target_link_libraries(libwebrtcbuild
+-INTERFACE
+-    tg_owt::libyuv
+-)
+ link_libabsl(libwebrtcbuild)
++link_libyuv(libwebrtcbuild)
+ 
+ target_compile_definitions(libwebrtcbuild
+ INTERFACE
+-- 
+2.51.2
+
