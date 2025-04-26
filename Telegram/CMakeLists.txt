@@ -1416,7 +1416,6 @@ PRIVATE
     platform/mac/launcher_mac.h
     platform/mac/integration_mac.mm
     platform/mac/integration_mac.h
-    platform/mac/mac_iconv_helper.c
     platform/mac/main_window_mac.mm
     platform/mac/main_window_mac.h
     platform/mac/notifications_manager_mac.mm
@@ -1792,12 +1791,6 @@ if (NOT build_winstore)
     )
 endif()
 
-if (DESKTOP_APP_USE_PACKAGED)
-    remove_target_sources(Telegram ${src_loc}
-        platform/mac/mac_iconv_helper.c
-    )
-endif()
-
 nice_target_sources(Telegram ${res_loc}
 PRIVATE
     qrc/emoji_1.qrc
@@ -1849,10 +1842,6 @@ if (WIN32)
 
     target_link_options(Telegram PRIVATE /PDBPAGESIZE:8192)
 elseif (APPLE)
-    if (NOT DESKTOP_APP_USE_PACKAGED)
-        target_link_libraries(Telegram PRIVATE desktop-app::external_iconv)
-    endif()
-
     set(icons_path ${CMAKE_CURRENT_SOURCE_DIR}/Telegram/Images.xcassets)
     if (CMAKE_GENERATOR STREQUAL Xcode)
         target_add_resource(Telegram ${icons_path})
@@ -1914,13 +1903,7 @@ elseif (APPLE)
         COMMAND cp ${CMAKE_BINARY_DIR}/lib_spellcheck.rcc $<TARGET_FILE_DIR:Telegram>/../Resources
     )
     if (NOT build_macstore AND NOT DESKTOP_APP_DISABLE_CRASH_REPORTS)
-        if (DESKTOP_APP_USE_PACKAGED)
-            find_program(CRASHPAD_HANDLER crashpad_handler REQUIRED)
-        elseif (DESKTOP_APP_MAC_ARCH STREQUAL "x86_64" OR DESKTOP_APP_MAC_ARCH STREQUAL "arm64")
-            set(CRASHPAD_HANDLER "${libs_loc}/crashpad/out/$<IF:$<CONFIG:Debug>,Debug,Release>.${DESKTOP_APP_MAC_ARCH}/crashpad_handler")
-        else()
-            set(CRASHPAD_HANDLER "${libs_loc}/crashpad/out/$<IF:$<CONFIG:Debug>,Debug,Release>/crashpad_handler")
-        endif()
+        find_program(CRASHPAD_HANDLER crashpad_handler REQUIRED)
         add_custom_command(TARGET Telegram
         PRE_LINK
             COMMAND mkdir -p $<TARGET_FILE_DIR:Telegram>/../Helpers
@@ -2160,10 +2143,6 @@ if (NOT DESKTOP_APP_DISABLE_AUTOUPDATE AND NOT build_macstore AND NOT build_wins
             desktop-app::external_openssl
         )
 
-        if (DESKTOP_APP_USE_PACKAGED)
-            target_compile_definitions(Packer PRIVATE PACKER_USE_PACKAGED)
-        endif()
-
         set_target_properties(Packer PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${output_folder})
     endif()
 elseif (build_winstore)
@@ -2182,7 +2161,7 @@ elseif (build_winstore)
     )
 endif()
 
-if (LINUX AND DESKTOP_APP_USE_PACKAGED)
+if (LINUX)
     include(GNUInstallDirs)
     configure_file("../lib/xdg/org.telegram.desktop.service" "${CMAKE_CURRENT_BINARY_DIR}/org.telegram.desktop.service" @ONLY)
     configure_file("../lib/xdg/org.telegram.desktop.metainfo.xml" "${CMAKE_CURRENT_BINARY_DIR}/org.telegram.desktop.metainfo.xml" @ONLY)
