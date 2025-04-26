@@ -46,7 +46,7 @@
     },
     {
       "name": "hunspell",
-      "platform": "!osx"
+      "platform": "linux"
     },
     {
       "name": "kf5coreaddons",
@@ -67,7 +67,10 @@
       "default-features": false
     },
     "libjpeg-turbo",
-    "libjxl",
+    {
+      "name": "libjxl",
+      "platform": "!windows"
+    },
     "liblzma",
     "lz4",
     "minizip",
