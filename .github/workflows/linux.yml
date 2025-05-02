@@ -11,8 +11,6 @@ on:
       - '.github/**'
       - '!.github/workflows/linux.yml'
       - 'snap/**'
-      - 'Telegram/build/**'
-      - '!Telegram/build/docker/centos_env/**'
       - 'Telegram/Resources/uwp/**'
       - 'Telegram/Resources/winrc/**'
       - 'Telegram/SourceFiles/platform/win/**'
@@ -30,8 +28,6 @@ on:
       - '.github/**'
       - '!.github/workflows/linux.yml'
       - 'snap/**'
-      - 'Telegram/build/**'
-      - '!Telegram/build/docker/centos_env/**'
       - 'Telegram/Resources/uwp/**'
       - 'Telegram/Resources/winrc/**'
       - 'Telegram/SourceFiles/platform/win/**'
@@ -53,8 +49,6 @@ jobs:
           - "DESKTOP_APP_DISABLE_X11_INTEGRATION"
 
     env:
-      UPLOAD_ARTIFACT: "true"
-      ONLY_CACHE: "false"
       IMAGE_TAG: tdesktop:centos_env
 
     steps:
@@ -67,6 +61,14 @@ jobs:
         run: |
           sudo apt update
           curl -sSL https://install.python-poetry.org | python3 -
+
+          echo "${{ hashFiles('Telegram/build/docker/centos_env/**') }}" >> CACHE_KEY.txt
+          echo "${{ hashFiles('Telegram/ThirdParty/vcpkg/scripts/vcpkg-tool-metadata.txt') }}" >> CACHE_KEY.txt
+          echo "${{ hashFiles('vcpkg.json') }}" >> CACHE_KEY.txt
+          echo "${{ hashFiles('vcpkg-configuration.json') }}" >> CACHE_KEY.txt
+          echo "${{ hashFiles('Telegram/build/patches/vcpkg/**') }}" >> CACHE_KEY.txt
+          echo "${{ hashFiles('conanfile.py') }}" >> CACHE_KEY.txt
+
           cd Telegram/build/docker/centos_env
           poetry install
           DOCKERFILE=$(DEBUG= LTO= poetry run gen_dockerfile)
@@ -74,9 +76,18 @@ jobs:
           rm -rf __pycache__
 
       - name: Free up some disk space.
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        uses: endersonmenezes/free-disk-space@6c4664f43348c8c7011b53488d5ca65e9fc5cd1a
         with:
-          tool-cache: true
+          remove_android: true
+          remove_dotnet: true
+          remove_haskell: true
+          remove_tool_cache: true
+          remove_swap: true
+          remove_packages: "azure-cli google-cloud-cli microsoft-edge-stable google-chrome-stable firefox postgresql* temurin-* *llvm* mysql* dotnet-sdk-*"
+          remove_packages_one_command: true
+          remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/lib/node_modules /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/local/aws-sam-cli /usr/share/gradle"
+          rm_cmd: "rmz"
+          rmz_version: "3.1.1"
 
       - name: Set up Docker Buildx.
         uses: docker/setup-buildx-action@v3
@@ -84,15 +95,18 @@ jobs:
       - name: Libraries cache.
         uses: actions/cache@v4
         with:
-          path: ${{ runner.temp }}/.buildx-cache
-          key: ${{ runner.OS }}-libs-${{ hashFiles('Telegram/build/docker/centos_env/**') }}
+          path: |
+            ${{ runner.temp }}/.buildx-cache
+            .cache/vcpkg/archives
+            .cache/conan/p
+          key: ${{ runner.OS }}-libs-${{ hashFiles('CACHE_KEY.txt') }}
           restore-keys: ${{ runner.OS }}-libs-
 
       - name: Libraries.
         uses: docker/build-push-action@v6
         with:
           context: Telegram/build/docker/centos_env
-          load: ${{ env.ONLY_CACHE == 'false' }}
+          load: true
           tags: ${{ env.IMAGE_TAG }}
           cache-from: type=local,src=${{ runner.temp }}/.buildx-cache
           cache-to: type=local,dest=${{ runner.temp }}/.buildx-cache-new,mode=max
@@ -103,7 +117,6 @@ jobs:
           mv ${{ runner.temp }}/.buildx-cache{-new,}
 
       - name: Telegram Desktop build.
-        if: env.ONLY_CACHE == 'false'
         run: |
           DEFINE=""
           if [ -n "${{ matrix.defines }}" ]; then
@@ -117,41 +130,22 @@ jobs:
           docker run --rm \
           -u $(id -u) \
           -v $PWD:/usr/src/tdesktop \
-          -e CONFIG=Debug \
+          -e CONFIG=Release \
+          -e GITHUB_ACTIONS \
           $IMAGE_TAG \
           /usr/src/tdesktop/Telegram/build/docker/centos_env/build.sh \
-          -D CMAKE_CONFIGURATION_TYPES=Debug \
-          -D CMAKE_C_FLAGS_DEBUG="-O0" \
-          -D CMAKE_CXX_FLAGS_DEBUG="-O0" \
+          -D CMAKE_CONFIGURATION_TYPES=Release \
+          -D CMAKE_C_FLAGS_RELEASE="-O0" \
+          -D CMAKE_CXX_FLAGS_RELEASE="-O0" \
+          -D CMAKE_EXE_LINKER_FLAGS_RELEASE="-fuse-ld=lld" \
           -D CMAKE_COMPILE_WARNING_AS_ERROR=ON \
           -D TDESKTOP_API_TEST=ON \
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=OFF \
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF \
           $DEFINE
 
-      - name: Check.
-        if: env.ONLY_CACHE == 'false'
-        run: |
-          filePath="out/Debug/Telegram"
-          if test -f "$filePath"; then
-            echo "Build successfully done! :)"
-
-            size=$(stat -c %s "$filePath")
-            echo "File size of ${filePath}: ${size} Bytes."
-          else
-            echo "Build error, output file does not exist."
-            exit 1
-          fi
-
-      - name: Move artifact.
-        if: env.UPLOAD_ARTIFACT == 'true'
-        run: |
-          cd out/Debug
-          mkdir artifact
-          mv {Telegram,Updater} artifact/
       - uses: actions/upload-artifact@v5
-        if: env.UPLOAD_ARTIFACT == 'true'
         name: Upload artifact.
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: out/Debug/artifact/
+          path: out/Release
