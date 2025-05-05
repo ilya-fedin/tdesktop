@@ -17,12 +17,11 @@ You will require **api_id** and **api_hash** to access the Telegram API servers.
 Go to ***BuildPath*** and run
 
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    brew install git automake cmake wget pkg-config gnu-tar ninja nasm meson
+    brew install git autoconf autoconf-archive automake libtool cmake conan wget pkg-config gnu-tar ninja nasm meson
 
     sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
     git clone --recursive https://github.com/telegramdesktop/tdesktop.git
-    ./tdesktop/Telegram/build/prepare/mac.sh
 
 ### Building the project
 

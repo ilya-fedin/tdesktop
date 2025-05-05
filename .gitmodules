@@ -94,3 +94,6 @@
 [submodule "Telegram/build/patches"]
 	path = Telegram/build/patches
 	url = https://github.com/desktop-app/patches.git
+[submodule "Telegram/ThirdParty/vcpkg"]
+	path = Telegram/ThirdParty/vcpkg
+	url = https://github.com/microsoft/vcpkg.git
