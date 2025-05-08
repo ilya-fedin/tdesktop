@@ -10,7 +10,6 @@ on:
       - 'LICENSE'
       - '.github/**'
       - '!.github/workflows/snap.yml'
-      - 'Telegram/build/**'
       - 'Telegram/Resources/uwp/**'
       - 'Telegram/Resources/winrc/**'
       - 'Telegram/SourceFiles/platform/win/**'
@@ -27,7 +26,6 @@ on:
       - 'LICENSE'
       - '.github/**'
       - '!.github/workflows/snap.yml'
-      - 'Telegram/build/**'
       - 'Telegram/Resources/uwp/**'
       - 'Telegram/Resources/winrc/**'
       - 'Telegram/SourceFiles/platform/win/**'
@@ -41,9 +39,6 @@ jobs:
   snap:
     name: Ubuntu
     runs-on: ubuntu-latest
-
-    env:
-      UPLOAD_ARTIFACT: "true"
 
     steps:
       - name: Clone.
@@ -71,7 +66,6 @@ jobs:
         run: sudo -u $USER snap run snapcraft --verbosity=debug
 
       - name: Move artifact.
-        if: env.UPLOAD_ARTIFACT == 'true'
         run: |
           artifact_name=$(echo telegram-desktop_*.snap)
           echo "ARTIFACT_NAME=$artifact_name" >> $GITHUB_ENV
@@ -80,7 +74,6 @@ jobs:
           mv $artifact_name artifact
 
       - uses: actions/upload-artifact@v5
-        if: env.UPLOAD_ARTIFACT == 'true'
         name: Upload artifact.
         with:
           name: ${{ env.ARTIFACT_NAME }}
