@@ -317,7 +317,7 @@ void MainWindow::updateWindowIcon() {
 bool MainWindow::nativeEvent(
 		const QByteArray &eventType,
 		void *message,
-		qintptr *result) {
+		base::NativeEventResult *result) {
 	if (message && eventType == "NSEvent") {
 		const auto event = static_cast<NSEvent*>(message);
 		if (PossiblyTextTypingEvent(event)) {

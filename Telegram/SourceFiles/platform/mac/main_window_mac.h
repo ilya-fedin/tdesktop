@@ -10,6 +10,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "platform/platform_main_window.h"
 #include "platform/mac/specific_mac_p.h"
 #include "base/timer.h"
+#include "base/qt/qt_common_adapters.h"
 
 #include <QtWidgets/QMenuBar>
 #include <QtCore/QTimer>
@@ -52,7 +53,7 @@ private:
 	bool nativeEvent(
 		const QByteArray &eventType,
 		void *message,
-		qintptr *result) override;
+		base::NativeEventResult *result) override;
 
 	void hideAndDeactivate();
 	void updateDockCounter();
