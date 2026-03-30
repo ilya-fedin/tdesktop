@@ -31,7 +31,6 @@ class PopupMenu;
 class ChatTheme;
 struct ChatPaintContext;
 struct ChatPaintContextArgs;
-enum class TouchScrollState;
 struct PeerUserpicView;
 class MessageSendingAnimationController;
 } // namespace Ui
@@ -336,9 +335,6 @@ public:
 	void selectItem(not_null<HistoryItem*> item);
 	void selectItemAsGroup(not_null<HistoryItem*> item);
 
-	void touchScrollUpdated(const QPoint &screenPos);
-	[[nodiscard]] rpl::producer<bool> touchMaybeSelectingValue() const;
-
 	[[nodiscard]] bool loadedAtTopKnown() const;
 	[[nodiscard]] bool loadedAtTop() const;
 	[[nodiscard]] bool loadedAtBottomKnown() const;
@@ -460,8 +456,6 @@ protected:
 		int visibleTop,
 		int visibleBottom) override;
 
-	bool eventHook(QEvent *e) override; // calls touchEvent when necessary
-	void touchEvent(QTouchEvent *e);
 	void paintEvent(QPaintEvent *e) override;
 	void keyPressEvent(QKeyEvent *e) override;
 	void mousePressEvent(QMouseEvent *e) override;
@@ -539,9 +533,6 @@ private:
 		Deselecting,
 	};
 
-	void onTouchSelect();
-	void onTouchScrollTimer();
-
 	void updateAroundPositionFromNearest(int nearestIndex);
 	void refreshRows(const Data::MessagesSlice &old);
 	ScrollTopState countScrollState() const;
@@ -587,12 +578,7 @@ private:
 	void itemRemoved(not_null<const HistoryItem*> item);
 	QPoint mapPointToItem(QPoint point, const Element *view) const;
 
-	void showContextMenu(QContextMenuEvent *e, bool showFromTouch = false);
 	void reactionChosen(ChosenReaction reaction);
-
-	void touchResetSpeed();
-	void touchUpdateSpeed();
-	void touchDeaccelerate(int32 elapsed);
 
 	[[nodiscard]] int findItemIndexByY(int y) const;
 	[[nodiscard]] not_null<Element*> findItemByY(int y) const;
@@ -861,26 +847,10 @@ private:
 	mutable bool _lastInSelectionMode = false;
 	mutable Ui::Animations::Simple _inSelectionModeAnimation;
 
-	// scroll by touch support (at least Windows Surface tablets)
-	bool _touchScroll = false;
-	bool _touchSelect = false;
-	bool _touchInProgress = false;
-	QPoint _touchStart, _touchPrevPos, _touchPos;
-	rpl::variable<bool> _touchMaybeSelecting;
-	base::Timer _touchSelectTimer;
-
 	Ui::DraggingScrollManager _selectScroll;
 
 	InfoTooltip _topToast;
 
-	Ui::TouchScrollState _touchScrollState = Ui::TouchScrollState();
-	bool _touchPrevPosValid = false;
-	bool _touchWaitingAcceleration = false;
-	QPoint _touchSpeed;
-	crl::time _touchSpeedTime = 0;
-	crl::time _touchAccelerationTime = 0;
-	crl::time _touchTime = 0;
-	base::Timer _touchScrollTimer;
 	Ui::MiddleClickAutoscroll _middleClickAutoscroll;
 
 	rpl::event_stream<FullMsgId> _requestedToEditMessage;

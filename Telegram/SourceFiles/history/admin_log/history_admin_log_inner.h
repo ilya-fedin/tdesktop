@@ -166,7 +166,6 @@ protected:
 	void enterEventHook(QEnterEvent *e) override;
 	void leaveEventHook(QEvent *e) override;
 	void contextMenuEvent(QContextMenuEvent *e) override;
-	bool eventHook(QEvent *e) override;
 
 	// Resizes content and counts natural widget height for the desired width.
 	int resizeGetHeight(int newWidth) override;
@@ -205,7 +204,6 @@ private:
 	void resizeItem(not_null<Element*> view);
 	QPoint mapPointToItem(QPoint point, const Element *view) const;
 
-	void showContextMenu(QContextMenuEvent *e, bool showFromTouch = false);
 	void savePhotoToFile(not_null<PhotoData*> photo);
 	void saveDocumentToFile(not_null<DocumentData*> document);
 	void copyContextImage(not_null<PhotoData*> photo);
@@ -277,14 +275,6 @@ private:
 	template <typename Method>
 	void enumerateDates(Method method);
 
-	void touchEvent(QTouchEvent *e);
-	void touchScrollUpdated(const QPoint &screenPos);
-	void touchResetSpeed();
-	void touchUpdateSpeed();
-	void touchDeaccelerate(int32 elapsed);
-	void onTouchSelect();
-	void onTouchScrollTimer();
-
 	const not_null<Window::SessionController*> _controller;
 	const not_null<ChannelData*> _channel;
 	const not_null<History*> _history;
@@ -350,22 +340,6 @@ private:
 
 	QPoint _trippleClickPoint;
 	base::Timer _trippleClickTimer;
-
-	base::Timer _touchSelectTimer;
-	base::Timer _touchScrollTimer;
-
-	// Touch scroll support.
-	bool _touchScroll = false;
-	bool _touchSelect = false;
-	bool _touchInProgress = false;
-	QPoint _touchStart, _touchPrevPos, _touchPos;
-	Ui::TouchScrollState _touchScrollState = Ui::TouchScrollState::Manual;
-	bool _touchPrevPosValid = false;
-	bool _touchWaitingAcceleration = false;
-	QPoint _touchSpeed;
-	crl::time _touchSpeedTime = 0;
-	crl::time _touchAccelerationTime = 0;
-	crl::time _touchTime = 0;
 
 	FilterValue _filter;
 	QString _searchQuery;

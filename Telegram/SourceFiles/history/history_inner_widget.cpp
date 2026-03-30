@@ -336,8 +336,6 @@ HistoryInner::HistoryInner(
 , _replyButtonManager(
 	std::make_unique<HistoryView::ReplyButton::Manager>(
 		[=](QRect updated) { update(updated); }))
-, _touchSelectTimer([=] { onTouchSelect(); })
-, _touchScrollTimer([=] { onTouchScrollTimer(); })
 , _middleClickAutoscroll(
 	[=](int d) { _scroll->scrollToY(_scroll->scrollTop() + d); },
 	[=](const QCursor &cursor) { setCursor(cursor); },
@@ -359,8 +357,6 @@ HistoryInner::HistoryInner(
 		controller->setChatStyleTheme(_theme);
 	}, lifetime());
 	Assert(_theme != nullptr);
-
-	setAttribute(Qt::WA_AcceptTouchEvents);
 
 	refreshAboutView();
 
@@ -688,7 +684,6 @@ void HistoryInner::setupSwipeReplyAndBack() {
 		.scroll = _scroll,
 		.update = std::move(update),
 		.init = std::move(init),
-		.dontStart = _touchMaybeSelecting.value(),
 	});
 }
 
@@ -1492,20 +1487,6 @@ void HistoryInner::paintEvent(QPaintEvent *e) {
 	_reactionsManager->paint(p, context);
 }
 
-bool HistoryInner::eventHook(QEvent *e) {
-	if (e->type() == QEvent::TouchBegin
-		|| e->type() == QEvent::TouchUpdate
-		|| e->type() == QEvent::TouchEnd
-		|| e->type() == QEvent::TouchCancel) {
-		QTouchEvent *ev = static_cast<QTouchEvent*>(e);
-		if (ev->device()->type() == base::TouchDevice::TouchScreen) {
-			touchEvent(ev);
-			return true;
-		}
-	}
-	return RpWidget::eventHook(e);
-}
-
 int HistoryInner::SelectionViewOffset(
 		not_null<const HistoryInner*> inner,
 		not_null<const Element*> view) {
@@ -1561,220 +1542,6 @@ HistoryInner::VideoUserpic *HistoryInner::validateVideoUserpic(
 	)).first->second.get();
 }
 
-void HistoryInner::onTouchScrollTimer() {
-	auto nowTime = crl::now();
-	if (_touchScrollState == Ui::TouchScrollState::Acceleration && _touchWaitingAcceleration && (nowTime - _touchAccelerationTime) > 40) {
-		_touchScrollState = Ui::TouchScrollState::Manual;
-		touchResetSpeed();
-	} else if (_touchScrollState == Ui::TouchScrollState::Auto || _touchScrollState == Ui::TouchScrollState::Acceleration) {
-		int32 elapsed = int32(nowTime - _touchTime);
-		QPoint delta = _touchSpeed * elapsed / 1000;
-		const auto consumedHorizontal = consumeScrollAction(delta);
-		if (consumedHorizontal) {
-			_horizontalScrollLocked = true;
-		}
-		const auto hasScrolled = consumedHorizontal
-			|| (!_horizontalScrollLocked && _widget->touchScroll(delta));
-
-		if (_touchSpeed.isNull() || !hasScrolled) {
-			_touchScrollState = Ui::TouchScrollState::Manual;
-			_touchScroll = false;
-			_horizontalScrollLocked = false;
-			_touchScrollTimer.cancel();
-		} else {
-			_touchTime = nowTime;
-		}
-		touchDeaccelerate(elapsed);
-	}
-}
-
-void HistoryInner::touchUpdateSpeed() {
-	const auto nowTime = crl::now();
-	if (_touchPrevPosValid) {
-		const int elapsed = nowTime - _touchSpeedTime;
-		if (elapsed) {
-			const QPoint newPixelDiff = (_touchPos - _touchPrevPos);
-			const QPoint pixelsPerSecond = newPixelDiff * (1000 / elapsed);
-
-			// fingers are inacurates, we ignore small changes to avoid stopping the autoscroll because
-			// of a small horizontal offset when scrolling vertically
-			const int newSpeedY = (qAbs(pixelsPerSecond.y()) > Ui::kFingerAccuracyThreshold) ? pixelsPerSecond.y() : 0;
-			const int newSpeedX = (qAbs(pixelsPerSecond.x()) > Ui::kFingerAccuracyThreshold) ? pixelsPerSecond.x() : 0;
-			if (_touchScrollState == Ui::TouchScrollState::Auto) {
-				const int oldSpeedY = _touchSpeed.y();
-				const int oldSpeedX = _touchSpeed.x();
-				if ((oldSpeedY <= 0 && newSpeedY <= 0) || ((oldSpeedY >= 0 && newSpeedY >= 0)
-					&& (oldSpeedX <= 0 && newSpeedX <= 0)) || (oldSpeedX >= 0 && newSpeedX >= 0)) {
-					_touchSpeed.setY(std::clamp(
-						(oldSpeedY + (newSpeedY / 4)),
-						-Ui::kMaxScrollAccelerated,
-						+Ui::kMaxScrollAccelerated));
-					_touchSpeed.setX(std::clamp(
-						(oldSpeedX + (newSpeedX / 4)),
-						-Ui::kMaxScrollAccelerated,
-						+Ui::kMaxScrollAccelerated));
-				} else {
-					_touchSpeed = QPoint();
-				}
-			} else {
-				// we average the speed to avoid strange effects with the last delta
-				if (!_touchSpeed.isNull()) {
-					_touchSpeed.setX(std::clamp(
-						(_touchSpeed.x() / 4) + (newSpeedX * 3 / 4),
-						-Ui::kMaxScrollFlick,
-						+Ui::kMaxScrollFlick));
-					_touchSpeed.setY(std::clamp(
-						(_touchSpeed.y() / 4) + (newSpeedY * 3 / 4),
-						-Ui::kMaxScrollFlick,
-						+Ui::kMaxScrollFlick));
-				} else {
-					_touchSpeed = QPoint(newSpeedX, newSpeedY);
-				}
-			}
-		}
-	} else {
-		_touchPrevPosValid = true;
-	}
-	_touchSpeedTime = nowTime;
-	_touchPrevPos = _touchPos;
-}
-
-void HistoryInner::touchResetSpeed() {
-	_touchSpeed = QPoint();
-	_touchPrevPosValid = false;
-}
-
-void HistoryInner::touchDeaccelerate(int32 elapsed) {
-	int32 x = _touchSpeed.x();
-	int32 y = _touchSpeed.y();
-	_touchSpeed.setX((x == 0) ? x : (x > 0) ? qMax(0, x - elapsed) : qMin(0, x + elapsed));
-	_touchSpeed.setY((y == 0) ? y : (y > 0) ? qMax(0, y - elapsed) : qMin(0, y + elapsed));
-}
-
-void HistoryInner::touchEvent(QTouchEvent *e) {
-	if (e->type() == QEvent::TouchCancel) { // cancel
-		if (!_touchInProgress) {
-			return;
-		}
-		_touchInProgress = false;
-		_touchSelectTimer.cancel();
-		_touchScroll = _touchSelect = false;
-		_horizontalScrollLocked = false;
-		_touchScrollState = Ui::TouchScrollState::Manual;
-		_touchMaybeSelecting = false;
-		mouseActionCancel();
-		return;
-	}
-
-	if (!e->touchPoints().isEmpty()) {
-		_touchPrevPos = _touchPos;
-		_touchPos = e->touchPoints().cbegin()->screenPos().toPoint();
-	}
-
-	switch (e->type()) {
-	case QEvent::TouchBegin: {
-		if (_menu) {
-			e->accept();
-			return; // ignore mouse press, that was hiding context menu
-		}
-		if (_touchInProgress || e->touchPoints().isEmpty()) {
-			return;
-		}
-
-		_touchInProgress = true;
-		_horizontalScrollLocked = false;
-		if (_touchScrollState == Ui::TouchScrollState::Auto) {
-			_touchMaybeSelecting = false;
-			_touchScrollState = Ui::TouchScrollState::Acceleration;
-			_touchWaitingAcceleration = true;
-			_touchAccelerationTime = crl::now();
-			touchUpdateSpeed();
-			_touchStart = _touchPos;
-		} else {
-			_touchScroll = false;
-			_touchMaybeSelecting = true;
-			_touchSelectTimer.callOnce(QApplication::startDragTime());
-		}
-		_touchSelect = false;
-		_touchStart = _touchPrevPos = _touchPos;
-	} break;
-
-	case QEvent::TouchUpdate: {
-		LOG(("UPDATE: %1,%2 -> %3,%4"
-			).arg(_touchStart.x()
-			).arg(_touchStart.y()
-			).arg(_touchPos.x()
-			).arg(_touchPos.y()));
-		if (!_touchInProgress) {
-			return;
-		} else if (_touchSelect) {
-			mouseActionUpdate(_touchPos);
-		} else if (!_touchScroll && (_touchPos - _touchStart).manhattanLength() >= QApplication::startDragDistance()) {
-			_touchSelectTimer.cancel();
-			_touchMaybeSelecting = false;
-			_touchScroll = true;
-			touchUpdateSpeed();
-		}
-		if (_touchScroll) {
-			if (_touchScrollState == Ui::TouchScrollState::Manual) {
-				touchScrollUpdated(_touchPos);
-			} else if (_touchScrollState == Ui::TouchScrollState::Acceleration) {
-				touchUpdateSpeed();
-				_touchAccelerationTime = crl::now();
-				if (_touchSpeed.isNull()) {
-					_touchScrollState = Ui::TouchScrollState::Manual;
-				}
-			}
-		}
-	} break;
-
-	case QEvent::TouchEnd: {
-		if (!_touchInProgress) {
-			return;
-		}
-		_touchInProgress = false;
-		const auto notMoved = (_touchPos - _touchStart).manhattanLength()
-			< QApplication::startDragDistance();
-		auto weak = base::make_weak(this);
-		if (_touchSelect) {
-			if (notMoved || _touchMaybeSelecting.current()) {
-				mouseActionFinish(_touchPos, Qt::RightButton);
-				auto contextMenu = QContextMenuEvent(
-					QContextMenuEvent::Mouse,
-					mapFromGlobal(_touchPos),
-					_touchPos);
-				showContextMenu(&contextMenu, true);
-			}
-			_touchScroll = false;
-		} else if (_touchScroll) {
-			if (_touchScrollState == Ui::TouchScrollState::Manual) {
-				_touchScrollState = Ui::TouchScrollState::Auto;
-				_touchPrevPosValid = false;
-				_touchScrollTimer.callEach(15);
-				_touchTime = crl::now();
-			} else if (_touchScrollState == Ui::TouchScrollState::Auto) {
-				_touchScrollState = Ui::TouchScrollState::Manual;
-				_horizontalScrollLocked = false;
-				_touchScroll = false;
-				touchResetSpeed();
-			} else if (_touchScrollState == Ui::TouchScrollState::Acceleration) {
-				_touchScrollState = Ui::TouchScrollState::Auto;
-				_touchWaitingAcceleration = false;
-				_touchPrevPosValid = false;
-			}
-		} else if (notMoved) { // One short tap is like left mouse click.
-			mouseActionStart(_touchPos, Qt::LeftButton);
-			mouseActionFinish(_touchPos, Qt::LeftButton);
-		}
-		if (weak) {
-			_touchSelectTimer.cancel();
-			_touchMaybeSelecting = false;
-			_touchSelect = false;
-		}
-	} break;
-	}
-}
-
 void HistoryInner::mouseMoveEvent(QMouseEvent *e) {
 	static auto lastGlobalPosition = e->globalPos();
 	auto reallyMoved = (lastGlobalPosition != e->globalPos());
@@ -1803,16 +1570,6 @@ void HistoryInner::mouseMoveEvent(QMouseEvent *e) {
 void HistoryInner::mouseActionUpdate(const QPoint &screenPos) {
 	_mousePosition = screenPos;
 	mouseActionUpdate();
-}
-
-void HistoryInner::touchScrollUpdated(const QPoint &screenPos) {
-	_touchPos = screenPos;
-	if (consumeScrollAction(_touchPos - _touchPrevPos)) {
-		_horizontalScrollLocked = true;
-	} else if (!_horizontalScrollLocked) {
-		_widget->touchScroll(_touchPos - _touchPrevPos);
-	}
-	touchUpdateSpeed();
 }
 
 QPoint HistoryInner::mapPointToItem(QPoint p, const Element *view) const {
@@ -2372,10 +2129,6 @@ HistoryView::SelectedQuote HistoryInner::selectedQuote(
 }
 
 void HistoryInner::contextMenuEvent(QContextMenuEvent *e) {
-	showContextMenu(e);
-}
-
-void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 	if (e->reason() == QContextMenuEvent::Mouse) {
 		mouseActionUpdate(e->globalPos());
 	}
@@ -2418,11 +2171,9 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 
 	// -2 - has full selected items, but not over, -1 - has selection, but no over, 0 - no selection, 1 - over text, 2 - over full selected items
 	auto isUponSelected = 0;
-	auto hasSelected = 0;
 	if (!_selected.empty()) {
 		isUponSelected = -1;
 		if (_selected.cbegin()->second == FullSelection) {
-			hasSelected = 2;
 			if (_dragStateItem && _selected.find(_dragStateItem) != _selected.cend()) {
 				isUponSelected = 2;
 			} else {
@@ -2432,7 +2183,6 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 			&& Element::Moused() == Element::Hovered()
 			&& _selected.cbegin()->first == Element::Moused()->data()) {
 			uint16 selFrom = _selected.cbegin()->second.from, selTo = _selected.cbegin()->second.to;
-			hasSelected = (selTo > selFrom) ? 1 : 0;
 			auto mousePos = mapPointToItem(mapFromGlobal(_mousePosition), Element::Moused());
 			StateRequest request;
 			request.flags |= Ui::Text::StateRequest::Flag::LookupSymbol;
@@ -2443,9 +2193,6 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 				isUponSelected = 1;
 			}
 		}
-	}
-	if (showFromTouch && hasSelected && isUponSelected < hasSelected) {
-		isUponSelected = hasSelected;
 	}
 
 	const auto groupLeaderOrSelf = [](HistoryItem *item) -> HistoryItem* {
@@ -4309,12 +4056,6 @@ MessageIdsList HistoryInner::getSelectedItems() const {
 	return result;
 }
 
-void HistoryInner::onTouchSelect() {
-	_touchSelect = true;
-	_touchMaybeSelecting = true;
-	mouseActionStart(_touchPos, Qt::LeftButton);
-}
-
 auto HistoryInner::reactionButtonParameters(
 	not_null<const Element*> view,
 	QPoint position,
@@ -5288,7 +5029,7 @@ bool HistoryInner::tooltipWindowActive() const {
 void HistoryInner::onParentGeometryChanged() {
 	auto mousePos = QCursor::pos();
 	auto mouseOver = _widget->rect().contains(_widget->mapFromGlobal(mousePos));
-	auto needToUpdate = (_mouseAction != MouseAction::None || _touchScroll || mouseOver);
+	auto needToUpdate = (_mouseAction != MouseAction::None || mouseOver);
 	if (needToUpdate) {
 		mouseActionUpdate(mousePos);
 	}

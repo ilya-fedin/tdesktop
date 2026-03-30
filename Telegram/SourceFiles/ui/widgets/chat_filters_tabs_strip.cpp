@@ -219,8 +219,7 @@ not_null<Ui::RpWidget*> AddChatFiltersTabsStrip(
 	const auto container = wrap->entity();
 	const auto scroll = Ui::CreateChild<Ui::ScrollArea>(
 		container,
-		st::dialogsTabsScroll,
-		true);
+		st::dialogsTabsScroll);
 	const auto slider = scroll->setOwnedWidget(
 		object_ptr<Ui::ChatsFiltersTabs>(
 			parent,

@@ -289,7 +289,7 @@ Widget::Widget(
 	not_null<Window::SessionController*> controller,
 	not_null<ChannelData*> channel)
 : Window::SectionWidget(parent, controller, rpl::single<PeerData*>(channel))
-, _scroll(this, st::historyScroll, false)
+, _scroll(this, st::historyScroll)
 , _fixedBar(this, controller, channel)
 , _fixedBarShadow(this)
 , _settingsFilter(

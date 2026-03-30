@@ -336,6 +336,7 @@ void Launcher::init() {
 	initQtMessageLogging();
 
 	QApplication::setApplicationName(u"TelegramDesktop"_q);
+	QApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	// fallback session management is useless for tdesktop since it doesn't have

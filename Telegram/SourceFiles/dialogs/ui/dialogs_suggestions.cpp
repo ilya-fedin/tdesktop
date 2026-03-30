@@ -1362,7 +1362,7 @@ Suggestions::Suggestions(
 : RpWidget(parent)
 , _controller(controller)
 , _tabsScroll(
-	std::make_unique<Ui::ScrollArea>(this, st::dialogsTabsScroll, true))
+	std::make_unique<Ui::ScrollArea>(this, st::dialogsTabsScroll))
 , _tabs(
 	_tabsScroll->setOwnedWidget(
 		object_ptr<Ui::SettingsSlider>(this, st::dialogsSearchTabs)))

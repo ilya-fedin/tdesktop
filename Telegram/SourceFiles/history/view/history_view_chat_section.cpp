@@ -273,8 +273,7 @@ ChatWidget::ChatWidget(
 	std::make_unique<TranslateBar>(_topBars.get(), controller, _history))
 , _scroll(std::make_unique<Ui::ScrollArea>(
 	this,
-	controller->chatStyle()->value(lifetime(), st::historyScroll),
-	false))
+	controller->chatStyle()->value(lifetime(), st::historyScroll)))
 , _cornerButtons(
 		_scroll.get(),
 		controller->chatStyle(),
@@ -1069,7 +1068,6 @@ void ChatWidget::setupSwipeReplyAndBack() {
 		.scroll = _scroll.get(),
 		.update = std::move(update),
 		.init = std::move(init),
-		.dontStart = _inner->touchMaybeSelectingValue(),
 	});
 }
 

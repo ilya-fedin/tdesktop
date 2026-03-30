@@ -249,8 +249,7 @@ HistoryWidget::HistoryWidget(
 , _topBar(this, controller)
 , _scroll(
 	this,
-	controller->chatStyle()->value(lifetime(), st::historyScroll),
-	false)
+	controller->chatStyle()->value(lifetime(), st::historyScroll))
 , _updateHistoryItems([=] { updateHistoryItemsByTimer(); })
 , _cornerButtons(
 	_scroll.data(),

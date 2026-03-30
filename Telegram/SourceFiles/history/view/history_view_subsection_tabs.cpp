@@ -114,8 +114,7 @@ void SubsectionTabs::setupHorizontal(not_null<QWidget*> parent) {
 	toggle->move(0, 0);
 	const auto scroll = Ui::CreateChild<Ui::ScrollArea>(
 		_horizontal,
-		st::chatTabsScroll,
-		true);
+		st::chatTabsScroll);
 	scroll->show();
 	const auto shadow = Ui::CreateChild<Ui::PlainShadow>(_horizontal);
 	const auto slider = scroll->setOwnedWidget(

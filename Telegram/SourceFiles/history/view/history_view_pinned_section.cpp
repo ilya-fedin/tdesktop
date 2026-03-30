@@ -111,8 +111,7 @@ PinnedWidget::PinnedWidget(
 , _translateBar(std::make_unique<TranslateBar>(this, controller, _history))
 , _scroll(std::make_unique<Ui::ScrollArea>(
 	this,
-	controller->chatStyle()->value(lifetime(), st::historyScroll),
-	false))
+	controller->chatStyle()->value(lifetime(), st::historyScroll)))
 , _clearButton(std::make_unique<Ui::FlatButton>(
 	this,
 	QString(),

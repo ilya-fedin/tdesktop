@@ -124,8 +124,6 @@ public:
 
 	[[nodiscard]] TextForMimeData getSelectedText() const;
 
-	void touchScrollUpdated(const QPoint &screenPos);
-
 	void setItemsRevealHeight(int revealHeight);
 	void changeItemsRevealHeight(int revealHeight);
 	void checkActivation();
@@ -240,8 +238,6 @@ public:
 protected:
 	bool focusNextPrevChild(bool next) override;
 
-	bool eventHook(QEvent *e) override; // calls touchEvent when necessary
-	void touchEvent(QTouchEvent *e);
 	void paintEvent(QPaintEvent *e) override;
 	void mouseMoveEvent(QMouseEvent *e) override;
 	void mousePressEvent(QMouseEvent *e) override;
@@ -254,9 +250,6 @@ protected:
 	void contextMenuEvent(QContextMenuEvent *e) override;
 
 private:
-	void onTouchSelect();
-	void onTouchScrollTimer();
-
 	[[nodiscard]] static int SelectionViewOffset(
 		not_null<const HistoryInner*> inner,
 		not_null<const Element*> view);
@@ -352,7 +345,6 @@ private:
 	[[nodiscard]] HistoryView::SelectedQuote selectedQuote(
 		not_null<HistoryItem*> item) const;
 
-	void showContextMenu(QContextMenuEvent *e, bool showFromTouch = false);
 	void cancelContextDownload(not_null<DocumentData*> document);
 	void openContextGif(FullMsgId itemId);
 	void saveContextGif(FullMsgId itemId);
@@ -367,10 +359,6 @@ private:
 
 	void itemRemoved(not_null<const HistoryItem*> item);
 	void viewRemoved(not_null<const Element*> view);
-
-	void touchResetSpeed();
-	void touchUpdateSpeed();
-	void touchDeaccelerate(int32 elapsed);
 
 	void adjustCurrent(int32 y) const;
 	void adjustCurrent(int32 y, History *history) const;
@@ -553,26 +541,10 @@ private:
 	mutable bool _lastInSelectionMode = false;
 	mutable Ui::Animations::Simple _inSelectionModeAnimation;
 
-	// scroll by touch support (at least Windows Surface tablets)
-	bool _touchScroll = false;
-	bool _touchSelect = false;
-	bool _touchInProgress = false;
-	QPoint _touchStart, _touchPrevPos, _touchPos;
-	rpl::variable<bool> _touchMaybeSelecting;
-	base::Timer _touchSelectTimer;
-
 	Ui::DraggingScrollManager _selectScroll;
 
 	rpl::variable<bool> _sharingDisallowed = false;
 
-	Ui::TouchScrollState _touchScrollState = Ui::TouchScrollState::Manual;
-	bool _touchPrevPosValid = false;
-	bool _touchWaitingAcceleration = false;
-	QPoint _touchSpeed;
-	crl::time _touchSpeedTime = 0;
-	crl::time _touchAccelerationTime = 0;
-	crl::time _touchTime = 0;
-	base::Timer _touchScrollTimer;
 	Ui::MiddleClickAutoscroll _middleClickAutoscroll;
 
 	Ui::Controls::SwipeContextData _gestureHorizontal;
