@@ -922,8 +922,7 @@ bool StickersListFooter::finishDragging(ScrollState &state) {
 }
 
 bool StickersListFooter::eventHook(QEvent *e) {
-	if (e->type() == QEvent::TouchBegin) {
-	} else if (e->type() == QEvent::Wheel) {
+	if (e->type() == QEvent::Wheel) {
 		if (!_icons.empty()
 			&& v::is<IconId>(_selected)
 			&& (_pressed == SpecialOver::None)) {
