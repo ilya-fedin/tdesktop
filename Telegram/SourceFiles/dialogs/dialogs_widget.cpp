@@ -99,6 +99,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtWidgets/QScrollBar>
 #include <QtWidgets/QTextEdit>
 
+#include <ksandbox.h>
+
 namespace Dialogs {
 namespace {
 
@@ -574,7 +576,7 @@ Widget::Widget(
 		[=] { searchCursorMoved(); },
 		Qt::QueuedConnection); // So getLastText() works already.
 
-	if (!Core::UpdaterDisabled()) {
+	if (!Core::UpdaterDisabled() || KSandbox::isFlatpak()) {
 		Core::UpdateChecker checker;
 		rpl::merge(
 			rpl::single(rpl::empty),
@@ -2176,7 +2178,7 @@ QPixmap Widget::grabForFolderSlideAnimation() {
 }
 
 void Widget::checkUpdateStatus() {
-	Expects(!Core::UpdaterDisabled());
+	Expects(!Core::UpdaterDisabled() || KSandbox::isFlatpak());
 
 	if (_layout == Layout::Child) {
 		return;

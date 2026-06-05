@@ -48,6 +48,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_intro.h"
 #include "base/qt/qt_common_adapters.h"
 
+#include <ksandbox.h>
+
 namespace Intro {
 namespace {
 
@@ -162,7 +164,7 @@ Widget::Widget(
 
 	cSetPasswordRecovered(false);
 
-	if (!Core::UpdaterDisabled()) {
+	if (!Core::UpdaterDisabled() || KSandbox::isFlatpak()) {
 		Core::UpdateChecker checker;
 		checker.start();
 		rpl::merge(
@@ -310,7 +312,7 @@ void Widget::createLanguageLink() {
 }
 
 void Widget::checkUpdateStatus() {
-	Expects(!Core::UpdaterDisabled());
+	Expects(!Core::UpdaterDisabled() || KSandbox::isFlatpak());
 
 	if (Core::UpdateChecker().state() == Core::UpdateChecker::State::Ready) {
 		if (_update) return;

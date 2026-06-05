@@ -38,6 +38,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtGui/QSessionManager>
 #include <QtGui/QScreen>
 #include <QtGui/qpa/qplatformscreen.h>
+#include <ksandbox.h>
 
 namespace Core {
 namespace {
@@ -65,7 +66,7 @@ Sandbox::Sandbox(int &argc, char **argv)
 }
 
 int Sandbox::start() {
-	if (!Core::UpdaterDisabled()) {
+	if (!Core::UpdaterDisabled() || KSandbox::isFlatpak()) {
 		_updateChecker = std::make_unique<Core::UpdateChecker>();
 	}
 

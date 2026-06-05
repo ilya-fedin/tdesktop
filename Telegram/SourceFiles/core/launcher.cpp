@@ -415,7 +415,7 @@ int Launcher::exec() {
 
 	DEBUG_LOG(("Telegram finished, result: %1").arg(result));
 
-	if (!UpdaterDisabled() && cRestartingUpdate()) {
+	if (cRestartingUpdate()) {
 		DEBUG_LOG(("Sandbox Info: executing updater to install update."));
 		if (!launchUpdater(UpdaterLaunch::PerformUpdate)) {
 			base::Platform::DeleteDirectory(cWorkingDir() + u"tupdates/temp"_q);

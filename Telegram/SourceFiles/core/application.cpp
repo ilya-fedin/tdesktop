@@ -1966,7 +1966,7 @@ void SetLaunchState(LaunchState state) {
 }
 
 void Restart() {
-   const auto updateReady = !UpdaterDisabled()
+   const auto updateReady = (!UpdaterDisabled() || KSandbox::isFlatpak())
 	   && (UpdateChecker().state() == UpdateChecker::State::Ready);
    if (updateReady) {
 	   cSetRestartingUpdate(true);

@@ -31,6 +31,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
+#include <QtCore/QFileSystemWatcher>
 
 #include <ksandbox.h>
 
@@ -1123,6 +1124,7 @@ private:
 	rpl::event_stream<> _ready;
 	Implementation _httpImplementation;
 	Implementation _mtpImplementation;
+	std::optional<QFileSystemWatcher> _flatpakWatcher;
 	std::shared_ptr<Loader> _activeLoader;
 	bool _usingMtprotoLoader = (cAlphaVersion() != 0);
 	base::weak_ptr<Main::Session> _session;
@@ -1149,6 +1151,22 @@ Updater::Updater()
 	isLatest() | rpl::on_next([=] {
 		handleLatest();
 	}, _lifetime);
+
+	if (KSandbox::isFlatpak()) {
+		const auto checkUpdated = [=] {
+			if (QFileInfo::exists(u"/app/.updated"_q)) {
+				_ready.fire({});
+			}
+		};
+		_flatpakWatcher.emplace({u"/app"_q});
+		QObject::connect(
+			&*_flatpakWatcher,
+			&QFileSystemWatcher::directoryChanged,
+			[=](const QString &path) {
+				checkUpdated();
+			});
+		checkUpdated();
+	}
 }
 
 rpl::producer<> Updater::checking() const {

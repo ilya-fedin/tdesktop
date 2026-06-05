@@ -23,6 +23,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_window.h"
 
 #include <QtGui/QWindow>
+#include <ksandbox.h>
 
 namespace Window {
 namespace {
@@ -235,7 +236,7 @@ ConnectionState::ConnectionState(
 		}
 	}, _lifetime);
 
-	if (!Core::UpdaterDisabled()) {
+	if (!Core::UpdaterDisabled() || KSandbox::isFlatpak()) {
 		Core::UpdateChecker checker;
 		rpl::merge(
 			rpl::single(rpl::empty),
