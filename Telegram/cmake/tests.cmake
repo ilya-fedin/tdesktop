@@ -42,3 +42,22 @@ set_target_properties(test_text PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINA
 add_dependencies(Telegram test_text)
 
 target_prepare_qrc(test_text)
+
+add_executable(test_crl_async)
+init_target(test_crl_async "(tests)")
+
+target_include_directories(test_crl_async PRIVATE ${src_loc})
+
+nice_target_sources(test_crl_async ${src_loc}
+PRIVATE
+    tests/test_crl_async.cpp
+)
+
+target_link_libraries(test_crl_async
+PRIVATE
+    desktop-app::lib_crl
+)
+
+set_target_properties(test_crl_async PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+add_dependencies(Telegram test_crl_async)
