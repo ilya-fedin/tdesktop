@@ -53,3 +53,41 @@ if (APPLE)
             "$<TARGET_FILE_DIR:test_text>/Contents/Resources/"
     )
 endif()
+
+add_executable(test_text_bench WIN32)
+init_target(test_text_bench "(tests)")
+
+target_include_directories(test_text_bench PRIVATE ${src_loc})
+
+nice_target_sources(test_text_bench ${src_loc}
+PRIVATE
+    tests/test_text_bench.cpp
+)
+
+# The emoji sprites, without which native emoji parse into blocks that have
+# nothing to draw.
+nice_target_sources(test_text_bench ${res_loc}
+PRIVATE
+    qrc/emoji_1.qrc
+    qrc/emoji_2.qrc
+    qrc/emoji_3.qrc
+    qrc/emoji_4.qrc
+    qrc/emoji_5.qrc
+    qrc/emoji_6.qrc
+    qrc/emoji_7.qrc
+    qrc/emoji_8.qrc
+)
+
+target_prepare_qrc(test_text_bench)
+
+target_link_libraries(test_text_bench
+PRIVATE
+    desktop-app::lib_base
+    desktop-app::lib_crl
+    desktop-app::lib_rpl
+    desktop-app::lib_ui
+    desktop-app::external_qt
+    desktop-app::external_qt_static_plugins
+)
+
+set_target_properties(test_text_bench PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
