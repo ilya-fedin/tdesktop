@@ -53,7 +53,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtGui/QClipboard>
 #include <QtGui/QWindow>
 #include <QtGui/QScreen>
-#include <QtGui/qpa/qplatformscreen.h>
 
 #include <algorithm>
 #include <memory>
@@ -2599,8 +2598,7 @@ void Panel::sendContentSafeArea() {
 	if (const auto screen = QGuiApplication::primaryScreen()) {
 		const auto dpi = screen->logicalDotsPerInch();
 		const auto ratio = screen->devicePixelRatio();
-		const auto basePair = screen->handle()->logicalBaseDpi();
-		const auto base = (basePair.first + basePair.second) * 0.5;
+		const auto base = style::BaseDPI();
 		const auto systemScreenScale = dpi * ratio / base;
 		report = int(base::SafeRound(scaled / systemScreenScale));
 	}
